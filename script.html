@@ -1,0 +1,798 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scripts &#8212; Fityk 1.3.1 manual</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/fitheme.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/fityk.ico"/>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="All the Rest" href="ref.html" />
+    <link rel="prev" title="Curve Fitting" href="fit.html" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="scripts">
+<span id="id1"></span><h1>Scripts<a class="headerlink" href="#scripts" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="working-with-scripts">
+<h2>Working with Scripts<a class="headerlink" href="#working-with-scripts" title="Permalink to this headline">¶</a></h2>
+<p>Fityk can run two kinds of scripts:</p>
+<ul class="simple">
+<li><p>Fityk scripts composed of the commands described in previous sections,</p></li>
+<li><p>and Lua scripts (extension <code class="docutils literal notranslate"><span class="pre">.lua</span></code>), in the Lua language.</p></li>
+</ul>
+<p>Scripts are executed using the <cite>exec</cite> command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>exec file1.fit
+exec file2.lua
+exec file3.fit.gz  <span class="c"># read script compressed with gzip</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Fityk can save its state to a script (<code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">state</span> <span class="pre">&gt;</span> <span class="pre">file.fit</span></code>).
+It can also save all commands executed (directly or via GUI) in the session
+to a script (<code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">history</span> <span class="pre">&gt;</span> <span class="pre">file.fit</span></code>).</p>
+</div>
+<p>Embedded Lua interpreter can execute any program in Lua 5.2.
+One-liners can be run with command <code class="docutils literal notranslate"><span class="pre">lua</span></code>:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>lua print(_VERSION)
+Lua 5.1
+<span class="gp">=-&gt; </span>lua print(os.date(&quot;Today is %A.&quot;))
+Today is Thursday.
+<span class="gp">=-&gt; </span>lua for n,f in F:all_functions() do print(n, f, f:get_template_name()) end
+0       %_1     Constant
+1       %_2     Cycle
+</pre></div>
+</div>
+<p>(The Lua <code class="docutils literal notranslate"><span class="pre">print</span></code> function in fityk is redefined to show the output
+in the GUI instead of writing to <code class="docutils literal notranslate"><span class="pre">stdout</span></code>).</p>
+<p>Like in the Lua interpreter, <code class="docutils literal notranslate"><span class="pre">=</span></code> at the beginning of line can be used
+to save some typing:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>= os.date(&quot;Today is %A.&quot;)
+Today is Thursday.
+</pre></div>
+</div>
+<p>Similarly, <code class="docutils literal notranslate"><span class="pre">exec=</span></code> also interprets the rest of line
+as Lua expressions, but this time the resulting string is executed
+as a fityk command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>= string.format(&quot;fit @%d&quot;, math.random(0,5))
+fit @4
+<span class="gp">=-&gt; </span>exec= string.format(&quot;fit @%d&quot;, math.random(0,5))
+<span class="c"># fitting random dataset (useless example)</span>
+</pre></div>
+</div>
+<p>The embedded Lua interpreter interacts with the rest of the program
+through the global object <code class="docutils literal notranslate"><span class="pre">F</span></code>:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>= F:get_info(&quot;version&quot;)
+Fityk 1.2.1
+</pre></div>
+</div>
+<p>All methods of <code class="docutils literal notranslate"><span class="pre">F</span></code> are documented in the section <a class="reference internal" href="#api"><span class="std std-ref">Fityk library API</span></a>.</p>
+<p>A few more examples.</p>
+<p>Let’s say that we work with a number of datasets, and for each of them
+we want to save output of the <code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">peaks</span></code> command to a file
+named <em>original-data-filename</em>.out. This can be done in one line:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>@*: lua F:execute(&quot;info peaks &gt;<span class="s1">&#39;%s.out&#39;</span>&quot; % F:get_info(&quot;filename&quot;))
+</pre></div>
+</div>
+<p>Now a more complex script that would need to be put into a file
+(with extension <code class="docutils literal notranslate"><span class="pre">.lua</span></code>) and run with <code class="docutils literal notranslate"><span class="pre">exec</span></code>.
+:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="c1">-- load data from files file01.dat, file02.dat, ... file13.dat</span>
+<span class="kr">for</span> <span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="mi">13</span> <span class="kr">do</span>
+    <span class="n">F</span><span class="p">:</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;@+ &lt; file%02d.dat:0:1::&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+<span class="kr">end</span>
+
+<span class="c1">-- print some statistics about the loaded data</span>
+<span class="n">n</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">get_dataset_count</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">n</span> <span class="o">..</span> <span class="s2">&quot; datasets loaded.&quot;</span><span class="p">)</span>
+
+<span class="n">total_max_y</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="kr">for</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span> <span class="kr">do</span>
+    <span class="n">max_y</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">calculate_expr</span><span class="p">(</span><span class="s2">&quot;max(y)&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+    <span class="kr">if</span> <span class="n">max_y</span> <span class="o">&gt;</span> <span class="n">total_max_y</span> <span class="kr">then</span>
+        <span class="n">total_max_y</span> <span class="o">=</span> <span class="n">max_y</span>
+    <span class="kr">end</span>
+<span class="kr">end</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The largest y: &quot;</span> <span class="o">..</span> <span class="n">total_max_y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If a fityk command executed from Lua script fails, the whole script is
+stopped, unless you catch the error:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="c1">-- wrap F:execute() in pcall to handle possible errors</span>
+<span class="n">status</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="nb">pcall</span><span class="p">(</span><span class="kr">function</span><span class="p">()</span> <span class="n">F</span><span class="p">:</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;fit&quot;</span><span class="p">)</span> <span class="kr">end</span><span class="p">)</span>
+<span class="kr">if</span> <span class="n">status</span> <span class="o">==</span> <span class="kc">false</span> <span class="kr">then</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: &quot;</span> <span class="o">..</span> <span class="n">err</span><span class="p">)</span>
+<span class="kr">end</span>
+</pre></div>
+</div>
+<p>The Lua interpreter was added in ver. 1.0.3. If you need help with writing
+Lua scripts - feel free to ask. Usage scenarios give us a better idea
+what functions should be available from the Lua interface.</p>
+<p>Fityk also has a simple mechanism to interact with external programs.
+It is useful mostly on Unix systems.  <code class="docutils literal notranslate"><span class="pre">!</span></code> runs a program,
+<code class="docutils literal notranslate"><span class="pre">exec!</span></code> runs a program, reads its standard output and executes it
+as a Fityk script.
+Here is an example of using Unix utilties <code class="docutils literal notranslate"><span class="pre">echo</span></code>, <code class="docutils literal notranslate"><span class="pre">ls</span></code> and <code class="docutils literal notranslate"><span class="pre">head</span></code>
+to load the newest CIF file from the current directory:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>! pwd
+/home/wojdyr/fityk/data
+<span class="gp">=-&gt; </span>! ls -t *.cif | head -1
+lab6_3-2610-q.cif
+<span class="gp">=-&gt; </span>exec! echo &quot;@+ &lt; $(ls -t *.cif | head -1)&quot;
+&gt; @+ &lt; lab6_3-2610-q.cif
+2300 points. No explicit std. dev. Set as sqrt(y)
+</pre></div>
+</div>
+</div>
+<div class="section" id="fityk-dsl">
+<h2>Fityk DSL<a class="headerlink" href="#fityk-dsl" title="Permalink to this headline">¶</a></h2>
+<p>As was described in <a class="reference internal" href="getstarted.html#cli"><span class="std std-ref">Command Line</span></a>, each line has a syntax:</p>
+<blockquote>
+<div><p>[[&#64;…:] [with …] command [“;” command]…] [#comment]</p>
+</div></blockquote>
+<p>The datasets listed before the colon (<code class="docutils literal notranslate"><span class="pre">:</span></code>) make a <em>foreach</em> loop.
+Here is a silly example:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>$a=0
+<span class="gp">=-&gt; </span>@0 @0 @0: $a={$a+1}; print $a
+1
+2
+3
+</pre></div>
+</div>
+<p>Command that follows the colon is run for each specified dataset
+in the context of that dataset. This is to say that:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>@2 @4: guess Voigt
+</pre></div>
+</div>
+<p>is equivalent to:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>use @2
+<span class="gp">=-&gt; </span>guess Voigt
+<span class="gp">=-&gt; </span>use @4
+<span class="gp">=-&gt; </span>guess Voigt
+</pre></div>
+</div>
+<p>(except that the latter sets permenently default dataset to <code class="docutils literal notranslate"><span class="pre">&#64;4</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">&#64;*</span></code> stands for all datasets, from <code class="docutils literal notranslate"><span class="pre">&#64;0</span></code> to the last one.</p>
+<p>Usually, when working with multiple datasets, one executes a command
+either for a single dataset or for all of them:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>@3: guess Voigt  <span class="c"># just for @3</span>
+<span class="gp">=-&gt; </span>@*: guess Voigt  <span class="c"># for all datasets</span>
+</pre></div>
+</div>
+<p>The whole line is parsed and partly validated before the execution.
+This may lead to unexpected errors when the line has
+multiple semicolon-separated commands:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>$a=4; print $a  <span class="c"># print gives unexpected error</span>
+Error: undefined variable: $a
+
+<span class="gp">=-&gt; </span>$b=2
+<span class="gp">=-&gt; </span>$b=4; print $b  <span class="c"># $b is already defined at the check time</span>
+4
+</pre></div>
+</div>
+<p>Therefore, it is recommended to have one command in one line.</p>
+<div class="section" id="grammar">
+<h3>Grammar<a class="headerlink" href="#grammar" title="Permalink to this headline">¶</a></h3>
+<p>The grammar is expressed in EBNF-like notation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">(*this</span> <span class="pre">is</span> <span class="pre">a</span> <span class="pre">comment*)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">A*</span></code> means 0 or more occurrences of A.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">A+</span></code> means 1 or more occurrences of A.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">%</span> <span class="pre">B</span></code> means <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">(B</span> <span class="pre">A)*</span></code> and the <code class="docutils literal notranslate"><span class="pre">%</span></code> operator has the highest
+precedence. For example: <code class="docutils literal notranslate"><span class="pre">term</span> <span class="pre">%</span> <span class="pre">&quot;+&quot;</span> <span class="pre">comment</span></code> is the same as
+<code class="docutils literal notranslate"><span class="pre">term</span> <span class="pre">(&quot;+&quot;</span> <span class="pre">term)*</span> <span class="pre">comment</span></code>.</p></li>
+<li><p>The colon <code class="docutils literal notranslate"><span class="pre">:</span></code> in quoted string means that the string can be shortened, e.g.
+<code class="docutils literal notranslate"><span class="pre">&quot;del:ete&quot;</span></code> means that any of <code class="docutils literal notranslate"><span class="pre">del</span></code>, <code class="docutils literal notranslate"><span class="pre">dele</span></code>, <code class="docutils literal notranslate"><span class="pre">delet</span></code> and <code class="docutils literal notranslate"><span class="pre">delete</span></code>
+can be used.</p></li>
+</ul>
+<p>The functions that can be used in <code class="docutils literal notranslate"><span class="pre">p_expr</span></code> and <code class="docutils literal notranslate"><span class="pre">v_expr</span></code> are available
+<a class="reference internal" href="data.html#transform"><span class="std std-ref">here</span></a> and <a class="reference internal" href="model.html#variables"><span class="std std-ref">here</span></a>, respectively.
+<code class="docutils literal notranslate"><span class="pre">v_expr</span></code> contains only a subset of functions from <code class="docutils literal notranslate"><span class="pre">p_expr</span></code> (partly,
+because we need to calculate symbolical derivatives of <code class="docutils literal notranslate"><span class="pre">v_expr</span></code>)</p>
+<p><strong>Line structure</strong></p>
+<pre>
+<strong id="grammar-token-line">line     </strong> ::=  [<a class="reference internal" href="#grammar-token-statement"><code class="xref docutils literal notranslate"><span class="pre">statement</span></code></a>] [<a class="reference internal" href="#grammar-token-comment"><code class="xref docutils literal notranslate"><span class="pre">comment</span></code></a>]
+<strong id="grammar-token-statement">statement</strong> ::=  [Dataset+ &quot;:&quot;] [<a class="reference internal" href="#grammar-token-with_opts"><code class="xref docutils literal notranslate"><span class="pre">with_opts</span></code></a>] <a class="reference internal" href="#grammar-token-command"><code class="xref docutils literal notranslate"><span class="pre">command</span></code></a> % &quot;;&quot;
+<strong id="grammar-token-with_opts"><span id="grammar-token-with-opts"></span>with_opts</strong> ::=  &quot;w:ith&quot; (Lname &quot;=&quot; <a class="reference internal" href="#grammar-token-value"><code class="xref docutils literal notranslate"><span class="pre">value</span></code></a>) % &quot;,&quot;
+<strong id="grammar-token-comment">comment  </strong> ::=  &quot;#&quot; AllChars*
+</pre>
+<p><strong>Commands</strong></p>
+<p>The kCmd* names in the comments correspond to constants in the code.</p>
+<pre>
+<strong id="grammar-token-command">command</strong> ::=  (
+             &quot;deb:ug&quot; RestOfLine              | <em>(*kCmdDebug*)</em>
+             &quot;def:ine&quot; <a class="reference internal" href="#grammar-token-define"><code class="xref docutils literal notranslate"><span class="pre">define</span></code></a>                 | <em>(*kCmdDefine*)</em>
+             &quot;del:ete&quot; <a class="reference internal" href="#grammar-token-delete"><code class="xref docutils literal notranslate"><span class="pre">delete</span></code></a>                 | <em>(*kCmdDelete*)</em>
+             &quot;del:ete&quot; <a class="reference internal" href="#grammar-token-delete_points"><code class="xref docutils literal notranslate"><span class="pre">delete_points</span></code></a>          | <em>(*kCmdDeleteP*)</em>
+             &quot;e:xecute&quot; <a class="reference internal" href="#grammar-token-exec"><code class="xref docutils literal notranslate"><span class="pre">exec</span></code></a>                  | <em>(*kCmdExec*)</em>
+             &quot;f:it&quot; <a class="reference internal" href="#grammar-token-fit"><code class="xref docutils literal notranslate"><span class="pre">fit</span></code></a>                       | <em>(*kCmdFit*)</em>
+             &quot;g:uess&quot; <a class="reference internal" href="#grammar-token-guess"><code class="xref docutils literal notranslate"><span class="pre">guess</span></code></a>                   | <em>(*kCmdGuess*)</em>
+             &quot;i:nfo&quot; <a class="reference internal" href="#grammar-token-info_arg"><code class="xref docutils literal notranslate"><span class="pre">info_arg</span></code></a> % &quot;,&quot; [<a class="reference internal" href="#grammar-token-redir"><code class="xref docutils literal notranslate"><span class="pre">redir</span></code></a>]   | <em>(*kCmdInfo*)</em>
+             &quot;l:ua&quot; RestOfLine                | <em>(*kCmdLua*)</em>
+             &quot;=&quot; RestOfLine                   | <em>(*kCmdLua*)</em>
+             &quot;pl:ot&quot; [<a class="reference internal" href="#grammar-token-range"><code class="xref docutils literal notranslate"><span class="pre">range</span></code></a>] [<a class="reference internal" href="#grammar-token-range"><code class="xref docutils literal notranslate"><span class="pre">range</span></code></a>] Dataset* [<a class="reference internal" href="#grammar-token-redir"><code class="xref docutils literal notranslate"><span class="pre">redir</span></code></a>] | <em>(*kCmdPlot*)</em>
+             &quot;p:rint&quot; <a class="reference internal" href="#grammar-token-print_args"><code class="xref docutils literal notranslate"><span class="pre">print_args</span></code></a> [<a class="reference internal" href="#grammar-token-redir"><code class="xref docutils literal notranslate"><span class="pre">redir</span></code></a>]      | <em>(*kCmdPrint*)</em>
+             &quot;quit&quot;                           | <em>(*kCmdQuit*)</em>
+             &quot;reset&quot;                          | <em>(*kCmdReset*)</em>
+             &quot;s:et&quot; (Lname &quot;=&quot; <a class="reference internal" href="#grammar-token-value"><code class="xref docutils literal notranslate"><span class="pre">value</span></code></a>) % &quot;,&quot;   | <em>(*kCmdSet*)</em>
+             &quot;sleep&quot; <a class="reference internal" href="#grammar-token-expr"><code class="xref docutils literal notranslate"><span class="pre">expr</span></code></a>                     | <em>(*kCmdSleep*)</em>
+             &quot;title&quot; &quot;=&quot; <a class="reference internal" href="#grammar-token-filename"><code class="xref docutils literal notranslate"><span class="pre">filename</span></code></a>             | <em>(*kCmdTitle*)</em>
+             &quot;undef:ine&quot; Uname % &quot;,&quot;          | <em>(*kCmdUndef*)</em>
+             &quot;use&quot; Dataset                    | <em>(*kCmdUse*)</em>
+             &quot;!&quot; RestOfLine                   | <em>(*kCmdShell*)</em>
+             Dataset &quot;&lt;&quot; <a class="reference internal" href="#grammar-token-load_arg"><code class="xref docutils literal notranslate"><span class="pre">load_arg</span></code></a>             | <em>(*kCmdLoad*)</em>
+             Dataset &quot;=&quot; <code class="xref docutils literal notranslate"><span class="pre">dataset_expr</span></code>         | <em>(*kCmdDatasetTr*)</em>
+             Funcname &quot;=&quot; <a class="reference internal" href="#grammar-token-func_rhs"><code class="xref docutils literal notranslate"><span class="pre">func_rhs</span></code></a>            | <em>(*kCmdNameFunc*)</em>
+             <a class="reference internal" href="#grammar-token-param_lhs"><code class="xref docutils literal notranslate"><span class="pre">param_lhs</span></code></a> &quot;=&quot; <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code>             | <em>(*kCmdAssignParam*)</em>
+             Varname &quot;=&quot; <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code>               | <em>(*kCmdNameVar*)</em>
+             Varname &quot;=&quot; &quot;copy&quot; &quot;(&quot; <a class="reference internal" href="#grammar-token-var_id"><code class="xref docutils literal notranslate"><span class="pre">var_id</span></code></a> &quot;)&quot; | <em>(*kCmdNameVar*)</em>
+             <a class="reference internal" href="#grammar-token-model_id"><code class="xref docutils literal notranslate"><span class="pre">model_id</span></code></a> (&quot;=&quot;|&quot;+=&quot;) <a class="reference internal" href="#grammar-token-model_rhs"><code class="xref docutils literal notranslate"><span class="pre">model_rhs</span></code></a>    | <em>(*kCmdChangeModel*)</em>
+             (<a class="reference internal" href="#grammar-token-p_attr"><code class="xref docutils literal notranslate"><span class="pre">p_attr</span></code></a> &quot;[&quot; <a class="reference internal" href="#grammar-token-expr"><code class="xref docutils literal notranslate"><span class="pre">expr</span></code></a> &quot;]&quot; &quot;=&quot; <code class="xref docutils literal notranslate"><span class="pre">p_expr</span></code>) % &quot;,&quot; | <em>(*kCmdPointTr*)</em>
+             (<a class="reference internal" href="#grammar-token-p_attr"><code class="xref docutils literal notranslate"><span class="pre">p_attr</span></code></a> &quot;=&quot; <code class="xref docutils literal notranslate"><span class="pre">p_expr</span></code>) % &quot;,&quot;        | <em>(*kCmdAllPointsTr*)</em>
+             &quot;M&quot; &quot;=&quot; <a class="reference internal" href="#grammar-token-expr"><code class="xref docutils literal notranslate"><span class="pre">expr</span></code></a>                     ) <em>(*kCmdResizeP*)</em>
+</pre>
+<p><strong>Other rules</strong></p>
+<pre>
+<strong id="grammar-token-define">define        </strong> ::=  Uname &quot;(&quot; (Lname [ &quot;=&quot; <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code>]) % &quot;,&quot; &quot;)&quot; &quot;=&quot;
+                       ( <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code> |
+                         <a class="reference internal" href="#grammar-token-component_func"><code class="xref docutils literal notranslate"><span class="pre">component_func</span></code></a> % &quot;+&quot; |
+                         &quot;x&quot; &quot;&lt;&quot; <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code> &quot;?&quot; <a class="reference internal" href="#grammar-token-component_func"><code class="xref docutils literal notranslate"><span class="pre">component_func</span></code></a> &quot;:&quot; <a class="reference internal" href="#grammar-token-component_func"><code class="xref docutils literal notranslate"><span class="pre">component_func</span></code></a>
+                       )
+<strong id="grammar-token-component_func"><span id="grammar-token-component-func"></span>component_func</strong> ::=  Uname &quot;(&quot; <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code> % &quot;,&quot; &quot;)&quot;
+<strong id="grammar-token-delete">delete        </strong> ::=  (Varname | <a class="reference internal" href="#grammar-token-func_id"><code class="xref docutils literal notranslate"><span class="pre">func_id</span></code></a> | Dataset | &quot;file&quot; <a class="reference internal" href="#grammar-token-filename"><code class="xref docutils literal notranslate"><span class="pre">filename</span></code></a>) % &quot;,&quot;
+<strong id="grammar-token-delete_points"><span id="grammar-token-delete-points"></span>delete_points </strong> ::=  &quot;(&quot; <code class="xref docutils literal notranslate"><span class="pre">p_expr</span></code> &quot;)&quot;
+<strong id="grammar-token-exec">exec          </strong> ::=  <a class="reference internal" href="#grammar-token-filename"><code class="xref docutils literal notranslate"><span class="pre">filename</span></code></a> |
+                    &quot;!&quot; RestOfLine |
+                    &quot;=&quot; RestOfLine
+<strong id="grammar-token-fit">fit           </strong> ::=  [Number] [Dataset*] |
+                    &quot;undo&quot; |
+                    &quot;redo&quot; |
+                    &quot;history&quot; Number |
+                    &quot;clear_history&quot;
+<strong id="grammar-token-guess">guess         </strong> ::=  [Funcname &quot;=&quot;] Uname [&quot;(&quot; (Lname &quot;=&quot; <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code>) % &quot;,&quot; &quot;)&quot;] [<a class="reference internal" href="#grammar-token-range"><code class="xref docutils literal notranslate"><span class="pre">range</span></code></a>]
+<strong id="grammar-token-info_arg"><span id="grammar-token-info-arg"></span>info_arg      </strong> ::=  ...TODO
+<strong id="grammar-token-print_args"><span id="grammar-token-print-args"></span>print_args    </strong> ::=  [(&quot;all&quot; | (&quot;if&quot; <code class="xref docutils literal notranslate"><span class="pre">p_expr</span></code> &quot;:&quot;)]
+                    (<code class="xref docutils literal notranslate"><span class="pre">p_expr</span></code> | QuotedString | &quot;title&quot; | &quot;filename&quot;) % &quot;,&quot;
+<strong id="grammar-token-redir">redir         </strong> ::=  (&quot;&gt;&quot;|&quot;&gt;&gt;&quot;) <a class="reference internal" href="#grammar-token-filename"><code class="xref docutils literal notranslate"><span class="pre">filename</span></code></a>
+<strong id="grammar-token-value">value         </strong> ::=  (Lname | QuotedString | <a class="reference internal" href="#grammar-token-expr"><code class="xref docutils literal notranslate"><span class="pre">expr</span></code></a>) <em>(*value type depends on the option*)</em>
+<strong id="grammar-token-model_rhs"><span id="grammar-token-model-rhs"></span>model_rhs     </strong> ::=  &quot;0&quot; |
+                    <a class="reference internal" href="#grammar-token-func_id"><code class="xref docutils literal notranslate"><span class="pre">func_id</span></code></a> |
+                    <a class="reference internal" href="#grammar-token-func_rhs"><code class="xref docutils literal notranslate"><span class="pre">func_rhs</span></code></a> |
+                    <a class="reference internal" href="#grammar-token-model_id"><code class="xref docutils literal notranslate"><span class="pre">model_id</span></code></a> |
+                    &quot;copy&quot; &quot;(&quot; <a class="reference internal" href="#grammar-token-model_id"><code class="xref docutils literal notranslate"><span class="pre">model_id</span></code></a> &quot;)&quot;
+<strong id="grammar-token-func_rhs"><span id="grammar-token-func-rhs"></span>func_rhs      </strong> ::=  Uname &quot;(&quot; ([Lname &quot;=&quot;] <code class="xref docutils literal notranslate"><span class="pre">v_expr</span></code>) % &quot;,&quot; &quot;)&quot; |
+                    &quot;copy&quot; &quot;(&quot; <a class="reference internal" href="#grammar-token-func_id"><code class="xref docutils literal notranslate"><span class="pre">func_id</span></code></a> &quot;)&quot;
+<strong id="grammar-token-load_arg"><span id="grammar-token-load-arg"></span>load_arg      </strong> ::=  <a class="reference internal" href="#grammar-token-filename"><code class="xref docutils literal notranslate"><span class="pre">filename</span></code></a> Lname* |
+                    &quot;.&quot;
+<strong id="grammar-token-p_attr"><span id="grammar-token-p-attr"></span>p_attr        </strong> ::=  (&quot;X&quot; | &quot;Y&quot; | &quot;S&quot; | &quot;A&quot;)
+<strong id="grammar-token-model_id"><span id="grammar-token-model-id"></span>model_id      </strong> ::=  [Dataset &quot;.&quot;] (&quot;F&quot;|&quot;Z&quot;)
+<strong id="grammar-token-func_id"><span id="grammar-token-func-id"></span>func_id       </strong> ::=  Funcname |
+                    <a class="reference internal" href="#grammar-token-model_id"><code class="xref docutils literal notranslate"><span class="pre">model_id</span></code></a> &quot;[&quot; Number &quot;]&quot;
+<strong id="grammar-token-param_lhs"><span id="grammar-token-param-lhs"></span>param_lhs     </strong> ::=  Funcname &quot;.&quot; Lname |
+                    <a class="reference internal" href="#grammar-token-model_id"><code class="xref docutils literal notranslate"><span class="pre">model_id</span></code></a> &quot;[&quot; (Number | &quot;*&quot;) &quot;]&quot; &quot;.&quot; Lname
+<strong id="grammar-token-var_id"><span id="grammar-token-var-id"></span>var_id        </strong> ::=  Varname |
+                    <a class="reference internal" href="#grammar-token-func_id"><code class="xref docutils literal notranslate"><span class="pre">func_id</span></code></a> &quot;.&quot; Lname
+<strong id="grammar-token-range">range         </strong> ::=  &quot;[&quot; [<a class="reference internal" href="#grammar-token-expr"><code class="xref docutils literal notranslate"><span class="pre">expr</span></code></a>] &quot;:&quot; [<a class="reference internal" href="#grammar-token-expr"><code class="xref docutils literal notranslate"><span class="pre">expr</span></code></a>] &quot;]&quot;
+<strong id="grammar-token-filename">filename      </strong> ::=  QuotedString | NonblankString
+</pre>
+<p><strong>Mathematical expressions</strong></p>
+<pre>
+<strong id="grammar-token-expr">expr       </strong> ::=  expr_or ? expr_or : expr_or
+<strong id="grammar-token-expr_or"><span id="grammar-token-expr-or"></span>expr_or    </strong> ::=  expr_and % &quot;or&quot;
+<strong id="grammar-token-expr_and"><span id="grammar-token-expr-and"></span>expr_and   </strong> ::=  expr_not % &quot;and&quot;
+<strong id="grammar-token-expr_not"><span id="grammar-token-expr-not"></span>expr_not   </strong> ::=  &quot;not&quot; expr_not | comparison
+<strong id="grammar-token-comparison">comparison </strong> ::=  arith % (&quot;&lt;&quot;|&quot;&gt;&quot;|&quot;==&quot;|&quot;&gt;=&quot;|&quot;&lt;=&quot;|&quot;!=&quot;)
+<strong id="grammar-token-arith">arith      </strong> ::=  term % (&quot;+&quot;|&quot;-&quot;)
+<strong id="grammar-token-term">term       </strong> ::=  factor % (&quot;*&quot;|&quot;/&quot;)
+<strong id="grammar-token-factor">factor     </strong> ::=  ('+'|'-') factor | power
+<strong id="grammar-token-power">power      </strong> ::=  atom ['**' factor]
+<strong id="grammar-token-atom">atom       </strong> ::=  Number | &quot;true&quot; | &quot;false&quot; | &quot;pi&quot; |
+                 math_func | braced_expr | ?others?
+<strong id="grammar-token-math_func"><span id="grammar-token-math-func"></span>math_func  </strong> ::=  &quot;sqrt&quot; &quot;(&quot; expr &quot;)&quot; |
+                 &quot;gamma&quot; &quot;(&quot; expr &quot;)&quot; |
+                  ...
+<strong id="grammar-token-braced_expr"><span id="grammar-token-braced-expr"></span>braced_expr</strong> ::=  &quot;{&quot; [Dataset+ &quot;:&quot;] <code class="xref docutils literal notranslate"><span class="pre">p_expr</span></code> &quot;}&quot;
+</pre>
+<p>The <code class="docutils literal notranslate"><span class="pre">atom</span></code> rule also accepts some fityk expressions, such as $variable,
+%function.parameter, %function(expr), etc.</p>
+<p><code class="docutils literal notranslate"><span class="pre">p_expr</span></code> and <code class="docutils literal notranslate"><span class="pre">v_expr</span></code> are similar to <code class="docutils literal notranslate"><span class="pre">expr</span></code>,
+but they use additional variables in the <code class="docutils literal notranslate"><span class="pre">atom</span></code> rule.</p>
+<p><code class="docutils literal notranslate"><span class="pre">p_expr</span></code> recognizes <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">M</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">s</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code>, <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">Y</span></code>,
+<code class="docutils literal notranslate"><span class="pre">S</span></code> and <code class="docutils literal notranslate"><span class="pre">A</span></code>. All of them but <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">M</span></code> can be indexed
+(e.g.  <code class="docutils literal notranslate"><span class="pre">x[4]</span></code>).  Example: <code class="docutils literal notranslate"><span class="pre">(x+x[n-1])/2</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">v_expr</span></code> uses all unknown names (<code class="docutils literal notranslate"><span class="pre">Lname</span></code>) as variables
+(example: <code class="docutils literal notranslate"><span class="pre">a+b*x^2</span></code>).
+Only a subset of functions (<code class="docutils literal notranslate"><span class="pre">math_func</span></code>) from <code class="docutils literal notranslate"><span class="pre">expr</span></code> is supported.
+The tilde (<code class="docutils literal notranslate"><span class="pre">~</span></code>) can be used to create simple-variables (<code class="docutils literal notranslate"><span class="pre">~5</span></code>),
+optionally with a domain in square brackets (<code class="docutils literal notranslate"><span class="pre">~5[1:6]</span></code>).</p>
+<p>Since <code class="docutils literal notranslate"><span class="pre">v_expr</span></code> is used to define variables and user-defined functions,
+the program calculates symbolically derivatives of <code class="docutils literal notranslate"><span class="pre">v_expr</span></code>.
+That is why not all the function from <code class="docutils literal notranslate"><span class="pre">expr</span></code> are supported
+(they may be added in the future).</p>
+<p><code class="docutils literal notranslate"><span class="pre">dataset_expr</span></code> supports very limited set of operators and a few functions
+that take Dataset token as argument (example: <code class="docutils literal notranslate"><span class="pre">&#64;0</span> <span class="pre">-</span> <span class="pre">shirley_bg(&#64;0)</span></code>).</p>
+<p><strong>Lexer</strong></p>
+<p>Below, some of the tokens produced by the fityk lexer are defined.</p>
+<p>The lexer is context-dependend: <code class="docutils literal notranslate"><span class="pre">NonblankString</span></code> and <code class="docutils literal notranslate"><span class="pre">RestOfLine</span></code>
+are produced only when they are expected in the grammar.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Uname</span></code> is used only for function types (Gaussian)
+and pseudo-parameters (%f.Area).</p>
+<pre>
+<strong id="grammar-token-Dataset"><span id="grammar-token-dataset"></span>Dataset       </strong> ::=  &quot;&#64;&quot;(Digit+|&quot;+&quot;|&quot;*&quot;)
+<strong id="grammar-token-Varname"><span id="grammar-token-varname"></span>Varname       </strong> ::=  &quot;$&quot; Lname
+<strong id="grammar-token-Funcname"><span id="grammar-token-funcname"></span>Funcname      </strong> ::=  &quot;%&quot; Lname
+<strong id="grammar-token-QuotedString"><span id="grammar-token-quotedstring"></span>QuotedString  </strong> ::=  &quot;'&quot; (AllChars - &quot;'&quot;)* &quot;'&quot;
+<strong id="grammar-token-Lname"><span id="grammar-token-lname"></span>Lname         </strong> ::=  (LowerCase | &quot;_&quot;) (LowerCase | Digit | &quot;_&quot;)*
+<strong id="grammar-token-Uname"><span id="grammar-token-uname"></span>Uname         </strong> ::=  UpperCase AlphaNum+
+<strong id="grammar-token-Number"><span id="grammar-token-number"></span>Number        </strong> ::=  ?number read by strtod()?
+<strong id="grammar-token-NonblankString"><span id="grammar-token-nonblankstring"></span>NonblankString</strong> ::=  (AllChars - (WhiteSpace | &quot;;&quot; | &quot;#&quot; ))*
+<strong id="grammar-token-RestOfLine"><span id="grammar-token-restofline"></span>RestOfLine    </strong> ::=  AllChars*
+</pre>
+</div>
+</div>
+<div class="section" id="fityk-library-api">
+<span id="api"></span><h2>Fityk library API<a class="headerlink" href="#fityk-library-api" title="Permalink to this headline">¶</a></h2>
+<p>Fityk comes with embedded Lua interpreter and this language
+is used in this section. The API for other supported languages is similar.
+Lua communicates with Fityk using object <code class="docutils literal notranslate"><span class="pre">F</span></code> of type <code class="docutils literal notranslate"><span class="pre">Fityk</span></code>.
+To call the methods listed below use <code class="docutils literal notranslate"><span class="pre">F:method()</span></code>, for example
+<code class="docutils literal notranslate"><span class="pre">F:get_dof()</span></code> (not <code class="docutils literal notranslate"><span class="pre">Fityk.get_dof()</span></code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Other supported languages include C++, C, Python, Perl, Ruby and Java.
+Except for C, all APIs are similar.</p>
+<p>Unlike in built-in Lua, in other cases it is necessary to create
+an instance of the Fityk class first. Then you use this object
+in the same way as <code class="docutils literal notranslate"><span class="pre">F</span></code> is used below.</p>
+<p>The <a class="reference external" href="https://github.com/wojdyr/fityk/blob/master/src/fityk.h">fityk.h</a> header file is the best reference.
+Additionally, C++ and Python have access to functions from
+the <a class="reference external" href="https://github.com/wojdyr/fityk/blob/master/src/ui_api.h">ui_api.h</a> header. These functions are used in command line
+versions of fityk (<code class="docutils literal notranslate"><span class="pre">cfityk</span></code> or its equivalent – <code class="docutils literal notranslate"><span class="pre">samples/cfityk.py</span></code>).</p>
+<p>Examples of scripts in all the listed languages and in the <a class="reference external" href="https://github.com/wojdyr/fityk/blob/master/samples/">samples</a>
+directory.</p>
+</div>
+<p>Here is the most general function:</p>
+<dl class="py method">
+<dt id="Fityk.execute">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">execute</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes a fityk command. Example: <code class="docutils literal notranslate"><span class="pre">F:execute(&quot;fit&quot;)</span></code>.</p>
+</dd></dl>
+
+<p>The <code class="docutils literal notranslate"><span class="pre">%</span></code> operator for the string type is pre-set to support Python-like
+formatting:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="o">=</span> <span class="s2">&quot;%d pigs&quot;</span> <span class="o">%</span> <span class="mi">3</span>
+<span class="o">=</span> <span class="s2">&quot;%d %s&quot;</span> <span class="o">%</span> <span class="p">{</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;pigs&quot;</span><span class="p">}</span>
+</pre></div>
+</div>
+<div class="section" id="input-output">
+<h3>Input / output<a class="headerlink" href="#input-output" title="Permalink to this headline">¶</a></h3>
+<dl class="py method">
+<dt id="Fityk.input">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">input</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query user. In the CLI user is asked for input in the command line,
+and in the GUI in a pop-up box. As a special case,
+if the prompt contains string “[y/n]” the GUI shows Yes/No buttons
+instead of text entry.</p>
+<p>Example: TODO</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.out">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">out</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.out" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print string in the output area. The <code class="docutils literal notranslate"><span class="pre">print()</span></code> function in built-in Lua
+is redefined to do the same.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="settings">
+<h3>Settings<a class="headerlink" href="#settings" title="Permalink to this headline">¶</a></h3>
+<dl class="py method">
+<dt id="Fityk.set_option_as_string">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">set_option_as_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.set_option_as_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set option <em>opt</em> to value <em>val</em>.
+Equivalent of fityk command <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">opt=val</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.set_option_as_number">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">set_option_as_number</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.set_option_as_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set option <em>opt</em> to numeric value <em>val</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_option_as_string">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_option_as_string</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_option_as_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns value of <em>opt</em> (string).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_option_as_number">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_option_as_number</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_option_as_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns value of <em>opt</em> (real number).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="data">
+<h3>Data<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h3>
+<dl class="py method">
+<dt id="Fityk.load">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">load</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">spec</span></em><span class="optional">[</span>, <em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data to &#64;*d* slot. The first argument is either a string with path
+or LoadSpec struct that apart from the <code class="docutils literal notranslate"><span class="pre">path</span></code> has also the following
+optional members: <code class="docutils literal notranslate"><span class="pre">x_col</span></code>, <code class="docutils literal notranslate"><span class="pre">y_col</span></code>, <code class="docutils literal notranslate"><span class="pre">sig_col</span></code>, <code class="docutils literal notranslate"><span class="pre">blocks</span></code>,
+<code class="docutils literal notranslate"><span class="pre">format</span></code>, <code class="docutils literal notranslate"><span class="pre">options</span></code>. The meaning of these parameters is the same
+as described in <a class="reference internal" href="data.html#dataload"><span class="std std-ref">Loading Data</span></a>.</p>
+<p>For example, due to limitations of the Fityk DSL a file with
+the <code class="docutils literal notranslate"><span class="pre">'</span></code> character in the path must be loaded through Lua:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="n">lua</span> <span class="n">F</span><span class="p">:</span><span class="nb">load</span><span class="p">(</span><span class="s">[[Kat&#39;s file.dat]]</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>LoadSpec is used to specify also format of the file, columns, etc:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="n">spec</span> <span class="o">=</span> <span class="n">fityk</span><span class="p">.</span><span class="n">LoadSpec</span><span class="p">(</span><span class="s1">&#39;my.csv&#39;</span><span class="p">)</span>
+<span class="n">spec</span><span class="p">.</span><span class="n">x_col</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">spec</span><span class="p">.</span><span class="n">y_col</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">spec</span><span class="p">.</span><span class="n">format</span> <span class="o">=</span> <span class="s1">&#39;csv&#39;</span>
+<span class="n">spec</span><span class="p">.</span><span class="n">options</span> <span class="o">=</span> <span class="s1">&#39;decimal_comma&#39;</span>
+<span class="n">F</span><span class="p">:</span><span class="nb">load</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.load_data">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">load_data</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">d</span></em>, <em class="sig-param"><span class="pre">xx</span></em>, <em class="sig-param"><span class="pre">yy</span></em>, <em class="sig-param"><span class="pre">sigmas</span></em><span class="optional">[</span>, <em class="sig-param"><span class="pre">title</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.load_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data to &#64;*d* slot. <em>xx</em> and <em>yy</em> must be numeric arrays
+of the same size, <em>sigmas</em> must either be empty or have the same size.
+<em>title</em> is an optional data title (string).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.add_point">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">add_point</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">x</span></em>, <em class="sig-param"><span class="pre">y</span></em>, <em class="sig-param"><span class="pre">sigma</span></em><span class="optional">[</span>, <em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.add_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add one data point ((<em>x</em>, <em>y</em>) with std. dev. set to <em>sigma</em>)
+to an existing dataset <em>d</em>.
+If <em>d</em> is not specified, the default dataset is used.</p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">F:add_point(30,</span> <span class="pre">7.5,</span> <span class="pre">1)</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_dataset_count">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_dataset_count</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_dataset_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns number of datasets (n &gt;= 1).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_default_dataset">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_default_dataset</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_default_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns default dataset. Default dataset is set by the “use &#64;n” command.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_data">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_data</span></code><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns points for dataset <em>d</em>.</p>
+<ul class="simple">
+<li><p>in C++ – returns vector&lt;Point&gt;</p></li>
+<li><p>in Lua – userdata with array-like methods, indexed from 0.</p></li>
+</ul>
+<p>Each point has 4 properties:
+<code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma</span></code> (real numbers) and <code class="docutils literal notranslate"><span class="pre">is_active</span></code> (bool).</p>
+<p>Example:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="n">points</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">get_data</span><span class="p">()</span>
+<span class="kr">for</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">#</span><span class="n">points</span><span class="o">-</span><span class="mi">1</span> <span class="kr">do</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="kr">if</span> <span class="n">p</span><span class="p">.</span><span class="n">is_active</span> <span class="kr">then</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">p</span><span class="p">.</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">.</span><span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">.</span><span class="n">sigma</span><span class="p">)</span>
+    <span class="kr">end</span>
+<span class="kr">end</span>
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>1       4.24    1.06    1
+2       6.73    1.39    1
+3       8.8     1.61    1
+...
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="general-info">
+<h3>General Info<a class="headerlink" href="#general-info" title="Permalink to this headline">¶</a></h3>
+<dl class="py method">
+<dt id="Fityk.get_info">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_info</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">s</span></em><span class="optional">[</span>, <em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns output of the fityk <code class="docutils literal notranslate"><span class="pre">info</span></code> command as a string.
+If <em>d</em> is not specified, the default dataset is used (the dataset
+is relevant for few arguments of the <code class="docutils literal notranslate"><span class="pre">info</span></code> command).</p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">F:get_info(&quot;history&quot;)</span></code> – returns a multiline string
+containing all fityk commands issued in this session.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.calculate_expr">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">calculate_expr</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">s</span></em><span class="optional">[</span>, <em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.calculate_expr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns output of the fityk <code class="docutils literal notranslate"><span class="pre">print</span></code> command as a number.
+If <em>d</em> is not specified, the default dataset is used.</p>
+<p>Example: <code class="docutils literal notranslate"><span class="pre">F:calculate_expr(&quot;argmax(y)&quot;,</span> <span class="pre">0)</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_view_boundary">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_view_boundary</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">side</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_view_boundary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get coordinates of the plotted rectangle,
+which is set by the <code class="docutils literal notranslate"><span class="pre">plot</span></code> command.
+Return numeric value corresponding to given <em>side</em>, which should be
+a letter <code class="docutils literal notranslate"><span class="pre">L</span></code>(eft), <code class="docutils literal notranslate"><span class="pre">R</span></code>(ight), <code class="docutils literal notranslate"><span class="pre">T</span></code>(op) or <code class="docutils literal notranslate"><span class="pre">B</span></code>(ottom).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="model-info">
+<h3>Model info<a class="headerlink" href="#model-info" title="Permalink to this headline">¶</a></h3>
+<dl class="py method">
+<dt id="Fityk.get_parameter_count">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_parameter_count</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_parameter_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns number of simple-variables (parameters that can be fitted)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.all_parameters">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">all_parameters</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.all_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns array of simple-variables.</p>
+<ul class="simple">
+<li><p>in C++ – vector&lt;double&gt;</p></li>
+<li><p>in Lua – userdata with array-like methods, indexed from 0.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.all_variables">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">all_variables</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.all_variables" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Returns array of all defined variables.</p>
+<ul class="simple">
+<li><p>in C++ – vector&lt;Var*&gt;</p></li>
+<li><p>in Lua – userdata with array-like methods, indexed from 0.</p></li>
+</ul>
+</div></blockquote>
+<p>Example:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">all_variables</span><span class="p">()</span>
+<span class="kr">for</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">#</span><span class="n">variables</span><span class="o">-</span><span class="mi">1</span> <span class="kr">do</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span><span class="n">value</span><span class="p">(),</span> <span class="n">v</span><span class="p">.</span><span class="n">domain</span><span class="p">.</span><span class="n">lo</span><span class="p">,</span> <span class="n">v</span><span class="p">.</span><span class="n">domain</span><span class="p">.</span><span class="n">hi</span><span class="p">,</span>
+          <span class="n">v</span><span class="p">:</span><span class="n">gpos</span><span class="p">(),</span> <span class="n">v</span><span class="p">:</span><span class="n">is_simple</span><span class="p">())</span>
+<span class="kr">end</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Var.is_simple()</span></code> returns true for simple-variables.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Var.gpos()</span></code> returns position of the variable in the global array
+of parameters (Fityk.all_parameters()), or -1 for compound variables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_variable">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns variable <em>$name</em>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.all_functions">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">all_functions</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.all_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns array of functions.</p>
+<ul class="simple">
+<li><p>in C++ – vector&lt;Func*&gt;</p></li>
+<li><p>in Lua – userdata with array-like methods, indexed from 0.</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">all_functions</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="c1">-- first functions</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span><span class="n">get_template_name</span><span class="p">())</span>          <span class="c1">-- _1        Gaussian</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">:</span><span class="n">get_param</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">f</span><span class="p">:</span><span class="n">get_param</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>         <span class="c1">-- height  center</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;$&quot;</span> <span class="o">..</span> <span class="n">f</span><span class="p">:</span><span class="n">var_name</span><span class="p">(</span><span class="s2">&quot;height&quot;</span><span class="p">))</span>            <span class="c1">-- $_4</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;center:&quot;</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span><span class="n">get_param_value</span><span class="p">(</span><span class="s2">&quot;center&quot;</span><span class="p">))</span> <span class="c1">-- center: 24.72235945525</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;f(25)=&quot;</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span><span class="n">value_at</span><span class="p">(</span><span class="mi">25</span><span class="p">))</span>               <span class="c1">-- f(25)=  4386.95533969</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_function">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_function</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the function with given <em>name</em>, or NULL if there is no such
+function.</p>
+<p>Example:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">get_function</span><span class="p">(</span><span class="s2">&quot;_1&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;f(25)=&quot;</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span><span class="n">value_at</span><span class="p">(</span><span class="mi">25</span><span class="p">))</span>               <span class="c1">-- f(25)=  4386.95533969</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_components">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_components</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">d</span></em><span class="optional">[</span>, <em class="sig-param"><span class="pre">fz</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns %functions used in dataset <em>d</em>. If <em>fz</em> is <code class="docutils literal notranslate"><span class="pre">Z</span></code>, returns
+zero-shift functions.</p>
+<p>Example:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="n">func</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">get_components</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">3</span><span class="p">]</span> <span class="c1">-- get 4th (index 3) function in @1</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>                   <span class="c1">-- &lt;Func %_6&gt;</span>
+<span class="n">vname</span> <span class="o">=</span> <span class="n">func</span><span class="p">:</span><span class="n">var_name</span><span class="p">(</span><span class="s2">&quot;hwhm&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">vname</span><span class="p">)</span>                  <span class="c1">-- _21</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">get_variable</span><span class="p">(</span><span class="n">vname</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span><span class="n">value</span><span class="p">())</span>           <span class="c1">-- &lt;Var $_21&gt;       0.1406587</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_model_value">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_model_value</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">x</span></em><span class="optional">[</span>, <em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_model_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the value of the model for dataset <code class="docutils literal notranslate"><span class="pre">&#64;</span></code><em>d</em> at <em>x</em>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="fit-statistics">
+<h3>Fit statistics<a class="headerlink" href="#fit-statistics" title="Permalink to this headline">¶</a></h3>
+<dl class="py method">
+<dt id="Fityk.get_wssr">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_wssr</span></code><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_wssr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns WSSR (weighted sum of squared residuals).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_ssr">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_ssr</span></code><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_ssr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns SSR (sum of squared residuals).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_rsquared">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_rsquared</span></code><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_rsquared" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns R-squared.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_dof">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_dof</span></code><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_dof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of degrees of freedom (#points - #parameters).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Fityk.get_covariance_matrix">
+<code class="sig-prename descclassname"><span class="pre">Fityk.</span></code><code class="sig-name descname"><span class="pre">get_covariance_matrix</span></code><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="pre">d</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#Fityk.get_covariance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns covariance matrix.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="examples-in-lua">
+<h2>Examples in Lua<a class="headerlink" href="#examples-in-lua" title="Permalink to this headline">¶</a></h2>
+<p>Show how the peak center moves between datasets:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="c1">-- file list-max.lua</span>
+<span class="n">prev_x</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="kr">for</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">F</span><span class="p">:</span><span class="n">get_dataset_count</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span> <span class="kr">do</span>
+    <span class="kd">local</span> <span class="n">path</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">get_info</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="kd">local</span> <span class="n">filename</span> <span class="o">=</span> <span class="nb">string.match</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;[^/</span><span class="se">\\</span><span class="s2">]+$&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+    <span class="c1">-- local x = F:calculate_expr(&quot;argmax(y)&quot;, n)</span>
+    <span class="kd">local</span> <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="p">:</span><span class="n">calculate_expr</span><span class="p">(</span><span class="s2">&quot;F[0].center&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="nb">string.format</span><span class="p">(</span><span class="s2">&quot;%s: max at x=%.4f&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="kr">if</span> <span class="n">prev_x</span> <span class="o">~=</span> <span class="kc">nil</span> <span class="kr">then</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">s</span> <span class="o">..</span> <span class="nb">string.format</span><span class="p">(</span><span class="s2">&quot;  (%+.4f)&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">-</span><span class="n">prev_x</span><span class="p">)</span>
+    <span class="kr">end</span>
+    <span class="n">prev_x</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="kr">end</span>
+</pre></div>
+</div>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>exec list-max.lua
+frame-000.dat: max at x=-0.0197
+frame-001.dat: max at x=-0.0209  (-0.0012)
+frame-002.dat: max at x=-0.0216  (-0.0007)
+frame-003.dat: max at x=-0.0224  (-0.0008)
+</pre></div>
+</div>
+<p>Write to file values of the model F(x) at chosen x’s
+(in this example x = 0, 1.5, 3, … 150):</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="c1">-- file tabular-f.lua</span>
+<span class="n">file</span> <span class="o">=</span> <span class="nb">io.open</span><span class="p">(</span><span class="s2">&quot;output.dat&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+<span class="kr">for</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mf">1.5</span> <span class="kr">do</span>
+    <span class="n">file</span><span class="p">:</span><span class="n">write</span><span class="p">(</span><span class="nb">string.format</span><span class="p">(</span><span class="s2">&quot;%g</span><span class="se">\t</span><span class="s2">%g</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">F</span><span class="p">:</span><span class="n">get_model_value</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+<span class="kr">end</span>
+<span class="n">file</span><span class="p">:</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>exec tabular-f.lua
+<span class="gp">=-&gt; </span>!head -5 output.dat
+0       12.1761
+1.5     12.3004
+3       10.9096
+4.5     9.12635
+6       8.27044
+</pre></div>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+ <a href="http://fityk.nieto.pl/">
+  <img class="logo" src="_static/fityk-logo.png" alt="Logo"/>
+ </a>
+<br/ >curve fitting,&nbsp; data analysis
+
+</p>
+
+<h3><a href="fityk-manual.html">Manual</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fit.html">Curve Fitting</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#working-with-scripts">Working with Scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fityk-dsl">Fityk DSL</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#grammar">Grammar</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#fityk-library-api">Fityk library API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#input-output">Input / output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#settings">Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#data">Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#general-info">General Info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#model-info">Model info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fit-statistics">Fit statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#examples-in-lua">Examples in Lua</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ref.html">All the Rest</a></li>
+</ul>
+
+<ul>
+ <li class="toctree-l1">
+ <a class="reference external" href="https://github.com/wojdyr/fityk/wiki">Wiki</a>
+ </li>
+</ul>
+<div id="searchbox" role="search">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="12" />
+      <input type="submit" value="Search" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+   <div class="related" role="navigation" aria-label="related navigation">
+    Next: <a href="ref.html">All the Rest</a>
+   </div>
+
+  <div class="footer" role="contentinfo">
+    Updated on 2021-09-06 with Sphinx 3.5.3.
+        | <a href="https://github.com/wojdyr/fityk/blob/master/doc/script.rst"
+          rel="nofollow">Edit on GitHub</a>
+  </div>
+  </body>
+</html>

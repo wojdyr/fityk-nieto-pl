@@ -1,0 +1,756 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Models &#8212; Fityk 1.3.1 manual</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/fitheme.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/fityk.ico"/>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Curve Fitting" href="fit.html" />
+    <link rel="prev" title="Data" href="data.html" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="models">
+<span id="model"></span><h1>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h1>
+<p>From <a class="reference external" href="http://www.nrbook.com/a/bookcpdf.php">Numerical Recipes</a>,
+chapter 15.0:</p>
+<blockquote>
+<div><p>Given a set of observations, one often wants to condense and summarize
+the data by fitting it to a “model” that depends on adjustable
+parameters. Sometimes the model is simply a convenient class of
+functions, such as polynomials or Gaussians, and the fit supplies the
+appropriate coefficients. Other times, the model’s parameters come
+from some underlying theory that the data are supposed to satisfy;
+examples are coefficients of rate equations in a complex network of
+chemical reactions, or orbital elements of a binary star. Modeling can
+also be used as a kind of constrained interpolation, where you want to
+extend a few data points into a continuous function, but with some
+underlying idea of what that function should look like.</p>
+</div></blockquote>
+<p>This chapter shows how to construct the model.</p>
+<p>Complex models are often a sum of many functions. That is why in Fityk
+the model <em>F</em> is constructed as a list of component functions
+and is computed as <img class="math" src="_images/math/10afab4a2ac5e4644ad7f1f8e5bf3d785903de53.png" alt="F = \sum_i f_i" style="vertical-align: -5px"/>.</p>
+<p>Each component function <img class="math" src="_images/math/5c00c0eb909b5784a7d47c3827c33abdc80f002a.png" alt="f_i" style="vertical-align: -4px"/> is one of predefined functions,
+such as Gaussian or polynomial.
+This is not a limitation, because the user can add any function
+to the predefined functions.</p>
+<p>To avoid confusion, the name <em>function</em> will be used only when referring
+to a component function, not when when referring to the sum (model),
+which mathematically is also a function. The predefined functions
+will be sometimes called <em>function types</em>.</p>
+<p>Function <img class="math" src="_images/math/20c909f7dd13777801fe9d7f804db77e1aa72fbf.png" alt="f_i=f_i(x; \boldsymbol{a})" style="vertical-align: -4px"/> is a function of <em>x</em>,
+and depends on a vector of parameters <img class="math" src="_images/math/150c86c8210fb8692f92d812e63dd681591f8eac.png" alt="\boldsymbol{a}" style="vertical-align: 0px"/>.
+The parameters <img class="math" src="_images/math/150c86c8210fb8692f92d812e63dd681591f8eac.png" alt="\boldsymbol{a}" style="vertical-align: 0px"/> will be fitted to achieve agreement
+of the model and data.</p>
+<p>In experiments we often have the situation that the measured <em>x</em> values
+are subject to systematic errors caused, for example, by instrumental
+zero shift or, in powder diffraction measurements,
+by displacement of sample in the instrument.
+If this is the case, such errors should be a part of the model.
+In Fityk, this part of the model is called <em class="dfn">x-correction</em>.
+The final formula for the model is:</p>
+<div class="math" id="model-formula">
+<p><img src="_images/math/39dec75286b1f6850606e2c0e142a3ea786e4717.png" alt="F(x; \boldsymbol{a}) = \sum_i f_i(x+Z(x; \boldsymbol{a}); \boldsymbol{a})"/></p>
+</div><p>where <img class="math" src="_images/math/155db9197b12ebffc6caba5c109191e672692bcb.png" alt="Z(x; \boldsymbol{a}) = \sum_i z_i(x; \boldsymbol{a})" style="vertical-align: -5px"/>
+is the <em>x</em>-correction. <em>Z</em> is constructed as a list of components,
+analogously to <em>F</em>, although in practice it has rarely more than
+one component.</p>
+<p>Each component function is created by specifying a function type
+and binding <em>variables</em> to type’s parameters. The next section explains
+what are <em>variables</em> in Fityk, and then we get back to functions.</p>
+<div class="section" id="variables">
+<span id="id1"></span><h2>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h2>
+<p>Variables have names prefixed with the dollar symbol ($)
+and are created by assigning a value:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>$foo=~5.3           <span class="c"># simple-variable</span>
+$bar=5*sin($foo)    <span class="c"># compound-variable</span>
+$c=3.1              <span class="c"># constant (the simplest compound-variable)</span>
+</pre></div>
+</div>
+<p>The numbers prefixed with the tilde (~) are adjustable when the model
+is fitted to the data.
+Variable created by assigning <code class="docutils literal notranslate"><span class="pre">~</span></code><em>number</em>
+(like <code class="docutils literal notranslate"><span class="pre">$foo</span></code> in the example above)
+will be called a <em class="dfn">simple-variable</em>.</p>
+<p>All other variables are called <em class="dfn">compound-variables</em>.
+Compound variables either depend on other variables (<code class="docutils literal notranslate"><span class="pre">$bar</span></code> above)
+or are constant (<code class="docutils literal notranslate"><span class="pre">$c</span></code>).</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Unlike in popular programming languages, variable can store either a single
+numeric (floating-point) value or a mathematical expression. Nothing else.
+In case of expression, if we define <code class="docutils literal notranslate"><span class="pre">$b=2*$a</span></code>
+the value of <code class="docutils literal notranslate"><span class="pre">$b</span></code> will be recalculated every time <code class="docutils literal notranslate"><span class="pre">$a</span></code> changes.</p>
+</div>
+<p>To assign a value (constant) of another variable, use:
+<code class="docutils literal notranslate"><span class="pre">$b={$a}</span></code>. Braces return the current value of the enclosed expression.
+The left brace can be preceded by the tilde (<code class="docutils literal notranslate"><span class="pre">~</span></code>).
+The assignment <code class="docutils literal notranslate"><span class="pre">$b=~{$a}</span></code> creates a simple variable.</p>
+<p>Compound-variables can be build using operators +, -, *, /, ^
+and the functions
+<code class="docutils literal notranslate"><span class="pre">sqrt</span></code>,
+<code class="docutils literal notranslate"><span class="pre">exp</span></code>,
+<code class="docutils literal notranslate"><span class="pre">log10</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ln</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sin</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cos</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tan</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sinh</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cosh</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tanh</span></code>,
+<code class="docutils literal notranslate"><span class="pre">atan</span></code>,
+<code class="docutils literal notranslate"><span class="pre">asin</span></code>,
+<code class="docutils literal notranslate"><span class="pre">acos</span></code>,
+<code class="docutils literal notranslate"><span class="pre">erf</span></code>,
+<code class="docutils literal notranslate"><span class="pre">erfc</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lgamma</span></code>,
+<code class="docutils literal notranslate"><span class="pre">abs</span></code>,
+<code class="docutils literal notranslate"><span class="pre">voigt</span></code>.
+This is a subset of the functions used in
+<a class="reference internal" href="data.html#transform"><span class="std std-ref">data transformations</span></a>.</p>
+<p>The braces may contain any data expression:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>$x0 = {x[0]}
+$min_y = {min(y if a)}
+$c = {max2($a, $b)}
+$t = {max(x) &lt; 78 ? $a : $b}
+</pre></div>
+</div>
+<p>Sometimes it is useful to freeze a variable, i.e. to prevent it from
+changing while fitting:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>$a = ~12.3 <span class="c"># $a is fittable (simple-variable)</span>
+$a = {$a}  <span class="c"># $a is not fittable (constant)</span>
+$a = ~{$a} <span class="c"># $a is fittable (simple-variable) again</span>
+</pre></div>
+</div>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>a variable can be switched between constant and simple-variable
+by clicking the padlock button on the sidebar.
+The icons <img alt="open lock" src="_images/open_lock_icon.png" /> and <img alt="lock" src="_images/lock_icon.png" />
+show that the variable is fittable and frozen, respectively.</p>
+</div>
+<p>If the assigned expression contains tildes:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>$bleh=~9.1*exp(~2)
+</pre></div>
+</div>
+<p>it automatically creates simple-variables corresponding
+to the tilde-prefixed numbers.
+In the example above two simple-variables (with values 9.1 and 2) are created.
+Automatically created variables are named <code class="docutils literal notranslate"><span class="pre">$_1</span></code>, <code class="docutils literal notranslate"><span class="pre">$_2</span></code>, <code class="docutils literal notranslate"><span class="pre">$_3</span></code>, and so on.</p>
+<p>Variables can be deleted using the command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>delete $variable
+</pre></div>
+</div>
+</div>
+<div class="section" id="domains">
+<span id="domain"></span><h2>Domains<a class="headerlink" href="#domains" title="Permalink to this headline">¶</a></h2>
+<p>Simple-variables may have a <em class="dfn">domain</em>,
+which is used for two things when fitting.</p>
+<p>Most importantly, fitting methods that support bound constraints
+use the domain as lower and/or upper bounds.
+See the section <a class="reference internal" href="fit.html#bound-constraints"><span class="std std-ref">Bound Constraints</span></a> for details.</p>
+<p>The other use is for randomizing parameters (simple-variables) of the model.
+Methods that stochastically initialize or modify parameters
+(usually generating a set of initial points) need well-defined
+domains (minimum and maximum values for parameters) to work effectively.
+Such methods include Nelder-Mead simplex and Genetic Algorithms,
+but not the default Lev-Mar method, so in most cases you
+do not need to worry about it.</p>
+<p>The syntax is as follows:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>$a = ~12.3 [0:20] <span class="c"># initial values are drawn from the (0, 20) range</span>
+$a = ~12.3 [0:]   <span class="c"># only lower bound</span>
+$a = ~12.3 [:20]  <span class="c"># only upper bound</span>
+$a = ~15.0        <span class="c"># domain stays the same</span>
+$a = ~15.0 []     <span class="c"># no domain</span>
+$a = ~{$a} [0:20] <span class="c"># domain is set again</span>
+</pre></div>
+</div>
+<p>If the domain is not specified but it is required (for the latter use)
+by the fitting method, we assume it to be ±<em>p</em>% of the current value,
+where <em>p</em> can be set using the <code class="xref std std-option docutils literal notranslate"><span class="pre">domain_percent</span></code> option.</p>
+</div>
+<div class="section" id="function-types-and-functions">
+<h2>Function Types and Functions<a class="headerlink" href="#function-types-and-functions" title="Permalink to this headline">¶</a></h2>
+<p>Function types have names that start with upper case letter
+(<code class="docutils literal notranslate"><span class="pre">Linear</span></code>, <code class="docutils literal notranslate"><span class="pre">Voigt</span></code>).</p>
+<p>Functions have names prefixed with the percent symbol (<code class="docutils literal notranslate"><span class="pre">%func</span></code>).
+Every function has a type and variables bound to its parameters.
+One way to create a function is to specify both type and variables:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>%f1 = Gaussian(~66254., ~24.7, ~0.264)
+%f2 = Gaussian(~6e4, $ctr, $b+$c)
+%f3 = Gaussian(height=~66254., hwhm=~0.264, center=~24.7)
+</pre></div>
+</div>
+<p>Every expression which is valid on the right-hand side of a variable
+assignment can be used as a variable.
+If it is not just a name of a variable, an automatic variable is created.
+In the above examples, two variables were implicitely created for <code class="docutils literal notranslate"><span class="pre">%f2</span></code>:
+first for value <code class="docutils literal notranslate"><span class="pre">6e4</span></code> and the second for <code class="docutils literal notranslate"><span class="pre">$b+$c</span></code>).</p>
+<p>If the names of function’s parameters are given (like for <code class="docutils literal notranslate"><span class="pre">%f3</span></code> above),
+the variables can be given in any order.</p>
+<p>Function types can can have specified default values for
+some parameters. The variables for such parameters can be omitted,
+e.g.:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>i Pearson7
+Pearson7(height, center, hwhm, shape=2) = height/(1+((x-center)/hwhm)^2*(2^(1/shape)-1))^shape
+<span class="gp">=-&gt; </span>%f4 = Pearson7(height=~66254., center=~24.7, hwhm=~0.264) <span class="c"># no shape is given</span>
+New function %f4 was created.
+</pre></div>
+</div>
+<p>Functions can be copied. The following command creates a deep copy
+(i.e. all variables are also duplicated) of %foo:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>%bar = copy(%foo)
+</pre></div>
+</div>
+<p>Functions can be also created with the command <code class="docutils literal notranslate"><span class="pre">guess</span></code>,
+as described in <a class="reference internal" href="#guess"><span class="std std-ref">Guessing Initial Parameters</span></a>.</p>
+<p>Variables bound to the function parameters can be changed at any time:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>%f = Pearson7(height=~66254., center=~24.7, fwhm=~0.264)
+New function %f was created.
+<span class="gp">=-&gt; </span>%f.center=~24.8
+<span class="gp">=-&gt; </span>$h = ~66254
+<span class="gp">=-&gt; </span>%f.height=$h
+<span class="gp">=-&gt; </span>info %f
+%f = Pearson7($h, $_5, $_3, $_4)
+<span class="gp">=-&gt; </span>$h = ~60000 <span class="c"># variables are kept by name, so this also changes %f</span>
+<span class="gp">=-&gt; </span>%p1.center = %p2.center + 3 <span class="c"># keep fixed distance between %p1 and %p2</span>
+</pre></div>
+</div>
+<p>Functions can be deleted using the command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>delete %function
+</pre></div>
+</div>
+</div>
+<div class="section" id="built-in-functions">
+<span id="flist"></span><h2>Built-In Functions<a class="headerlink" href="#built-in-functions" title="Permalink to this headline">¶</a></h2>
+<p>The list of all functions can be obtained using <code class="docutils literal notranslate"><span class="pre">i</span> <span class="pre">types</span></code>.
+Some formulae here have long parameter names
+(like “height”, “center” and “hwhm”) replaced with <img class="math" src="_images/math/610579e4973ba8f1cb617652ab47dd3990d5be02.png" alt="a_i" style="vertical-align: -3px"/></p>
+<p><strong id="Gaussian">Gaussian</strong>:</p>
+<div class="math">
+<p><img src="_images/math/e204bd962eb9174bf9641e36c168d6d90839cfe0.png" alt="y = a_0
+    \exp\left[-\ln(2)\left(\frac{x-a_1}{a_2}\right)^{2}\right]"/></p>
+</div><p><img class="math" src="_images/math/d7b1157f8a1e0d35b2b2bd17f448d35d16de34e4.png" alt="a_2" style="vertical-align: -3px"/> here is half width at half maximum (HWHM=FWHM/2,
+where FWHM stands for full width…), which is proportional to the standard
+deviation: <img class="math" src="_images/math/e369b0ac31170bac165f2d3a8ab8876ead4facc5.png" alt="a_2=\sqrt{2\ln2}\sigma" style="vertical-align: -3px"/>.</p>
+<p><strong id="SplitGaussian">SplitGaussian</strong>:</p>
+<div class="math">
+<p><img src="_images/math/57e7df2705a5bbf9f75bf7fa9f7073be5a9ff874.png" alt="y(x;a_0,a_1,a_2,a_3) = \begin{cases}
+\textrm{Gaussian}(x;a_0,a_1,a_2) &amp; x\leq a_1\\
+\textrm{Gaussian}(x;a_0,a_1,a_3) &amp; x&gt;a_1\end{cases}"/></p>
+</div><p><strong id="GaussianA">GaussianA</strong>:</p>
+<div class="math">
+<p><img src="_images/math/76bb54e7cdc6aa17787721a876909603982b5c74.png" alt="y = \sqrt{\frac{\ln(2)}{\pi}}\frac{a_0}{a_2}
+    \exp\left[-\ln(2)\left(\frac{x-a_1}{a_2}\right)^{2}\right]"/></p>
+</div><p><strong id="Lorentzian">Lorentzian</strong>:</p>
+<div class="math">
+<p><img src="_images/math/c6ad33b4e8605fe034bb8f32ec9eb3ac07e5cf1b.png" alt="y = \frac{a_0}{1+\left(\frac{x-a_1}{a_2}\right)^2}"/></p>
+</div><p><strong id="SplitLorentzian">SplitLorentzian</strong>:</p>
+<div class="math">
+<p><img src="_images/math/b93cfb34d17480842566deb3bc4db1b3223a22d8.png" alt="y(x;a_0,a_1,a_2,a_3) = \begin{cases}
+\textrm{Lorentzian}(x;a_0,a_1,a_2) &amp; x\leq a_1\\
+\textrm{Lorentzian}(x;a_0,a_1,a_3) &amp; x&gt;a_1\end{cases}"/></p>
+</div><p><strong id="LorentzianA">LorentzianA</strong>:</p>
+<div class="math">
+<p><img src="_images/math/be7dc0d61c223e21b87c97502fbf32e210445d32.png" alt="y = \frac{a_0}{\pi a_2\left[1+\left(\frac{x-a_1}{a_2}\right)^2\right]}"/></p>
+</div><p><strong id="Pearson7">Pearson VII (Pearson7)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/dc96b3cfacbd03d659e135b72108a43bcdf6c1a8.png" alt="y = \frac{a_0} {\left[1+\left(\frac{x-a_1}{a_2}\right)^2
+                        \left(2^{\frac{1}{a_3}}-1\right)\right]^{a_3}}"/></p>
+</div><p><strong id="SplitPearson7">split Pearson VII (SplitPearson7)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/572f979a604ee2edc8b3281874fda397d03558ed.png" alt="y(x;a_{0},a_{1},a_{2},a_{3},a_{4},a_{5}) = \begin{cases}
+ \textrm{Pearson7}(x;a_0,a_1,a_2,a_4) &amp; x\leq a_1\\
+ \textrm{Pearson7}(x;a_0,a_1,a_3,a_5) &amp; x&gt;a_1\end{cases}"/></p>
+</div><p><strong id="Pearson7A">Pearson VII Area (Pearson7A)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/63aec071cc27736ee2a94d7c02f52aad982927df.png" alt="y = \frac{a_0\Gamma(a_3)\sqrt{2^{\frac{1}{a_3}}-1}}
+         {a_2\Gamma(a_3-\frac{1}{2})\sqrt{\pi} \left[
+            1 + \left(\frac{x-a_1}{a_2}\right)^2
+                \left(2^{\frac{1}{a_3}}-1\right)
+         \right]^{a_3}}"/></p>
+</div><p><strong id="PseudoVoigt">Pseudo-Voigt (PseudoVoigt)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/1e33d053ee74283b760ffef643441ada8c5255ec.png" alt="y = a_0 \left[(1-a_3)\exp\left(-\ln(2)\left(\frac{x-a_1}{a_2}\right)^2\right)
+              + \frac{a_3}{1+\left(\frac{x-a_1}{a_2}\right)^2}
+        \right]"/></p>
+</div><p>Pseudo-Voigt is a name given to the sum of Gaussian and Lorentzian.
+<img class="math" src="_images/math/74ee8c121a7d186a7fada5685095f5a374323b7f.png" alt="a_3" style="vertical-align: -3px"/> parameters in Pearson VII and Pseudo-Voigt
+are not related.</p>
+<p><strong id="SplitPseudoVoigt">split Pseudo-Voigt (SplitPseudoVoigt)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/3c007f2fcf1cdc511eb1882c14531d9ced3e6da9.png" alt="y(x;a_{0},a_{1},a_{2},a_{3},a_{4},a_{5}) = \begin{cases}
+ \textrm{PseudoVoigt}(x;a_0,a_1,a_2,a_4) &amp; x\leq a_1\\
+ \textrm{PseudoVoigt}(x;a_0,a_1,a_3,a_5) &amp; x&gt;a_1\end{cases}"/></p>
+</div><p><strong id="PseudoVoigtA">Pseudo-Voigt Area (PseudoVoigtA)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/b326d1a9519337f3d9742522c198f69e4d0e19c7.png" alt="y = a_0 \left[\frac{(1-a_3)\sqrt{\ln(2)}}{a_2\sqrt{\pi}}
+              \exp\left(-\ln2\left(\frac{x-a_1}{a_2}\right)^2\right)
+              + \frac{a_3}{\pi a_2
+                           \left[1+\left(\frac{x-a_1}{a_2}\right)^2\right]}
+        \right]"/></p>
+</div><p><strong id="Voigt">Voigt</strong>:</p>
+<div class="math">
+<p><img src="_images/math/b2fe6d3ebae8cff8bac30b6bcdd77e4741683f17.png" alt="y = \frac
+    {a_0 \int_{-\infty}^{+\infty}
+             \frac{\exp(-t^2)}{a_3^2+(\frac{x-a_1}{a_2}-t)^2} dt}
+    {\int_{-\infty}^{+\infty}
+             \frac{\exp(-t^2)}{a_3^2+t^2} dt}"/></p>
+</div><p>The Voigt function is a convolution of Gaussian and Lorentzian functions.
+<img class="math" src="_images/math/59a7fc5bb3d527744f65a6ed1c80a712a67140ab.png" alt="a_0" style="vertical-align: -3px"/> = heigth,
+<img class="math" src="_images/math/a88ff0371977bb02b5eb503f2305d56f4e378210.png" alt="a_1" style="vertical-align: -4px"/> = center,
+<img class="math" src="_images/math/d7b1157f8a1e0d35b2b2bd17f448d35d16de34e4.png" alt="a_2" style="vertical-align: -3px"/> is proportional to the Gaussian width, and
+<img class="math" src="_images/math/74ee8c121a7d186a7fada5685095f5a374323b7f.png" alt="a_3" style="vertical-align: -3px"/> is proportional to the ratio of Lorentzian and Gaussian widths.</p>
+<p>Voigt is computed according to R.J.Wells,
+<em>Rapid approximation to the Voigt/Faddeeva function and its derivatives</em>,
+Journal of Quantitative Spectroscopy &amp; Radiative Transfer
+62 (1999) 29-48.
+The approximation is very fast, but not very exact.</p>
+<p>FWHM is estimated using an approximation called <em>modified Whiting</em>
+(<a class="reference external" href="http://dx.doi.org/10.1016/0022-4073(77)90161-3">Olivero and Longbothum, 1977, JQSRT 17, 233</a>):
+<img class="math" src="_images/math/8b5e31fe9c035078ea036374934994a5095ca309.png" alt="0.5346 w_L + \sqrt{0.2169 w_L^2 + w_G^2}" style="vertical-align: -6px"/>,
+where <img class="math" src="_images/math/4125f4e6f2ddd8da19381e5c46f41d3d99fc15b9.png" alt="w_G=2\sqrt{\ln(2)} |a_2|, w_L=2 |a_2| a_3" style="vertical-align: -6px"/>.</p>
+<p><strong id="VoigtA">VoigtA</strong>:</p>
+<div class="math">
+<p><img src="_images/math/757b424c28f7d6ac02a4c5e7576348ffd2107317.png" alt="y = \frac{a_0}{\sqrt{\pi}a_2}
+    \int_{-\infty}^{+\infty}
+        \frac{\exp(-t^2)}{a_3^2+(\frac{x-a_1}{a_2}-t)^2} dt"/></p>
+</div><p><strong id="SplitVoigt">split Voigt (SplitVoigt)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/f8648f8e150d0e115b9a8fc36183216001c75de8.png" alt="y(x;a_{0},a_{1},a_{2},a_{3},a_{4},a_{5}) = \begin{cases}
+ \textrm{Voigt}(x;a_0,a_1,a_2,a_4) &amp; x\leq a_1\\
+ \textrm{Voigt}(x;a_0,a_1,a_3,a_5) &amp; x&gt;a_1\end{cases}"/></p>
+</div><p><strong id="EMG">Exponentially Modified Gaussian (EMG)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/f4996c56b8e8ccdd1833b605b2015256c88b4b87.png" alt="y = \frac{ac\sqrt{2\pi}}{2d}
+    \exp\left(\frac{c^2}{2d^2}-\frac{x-b}{d}\right)
+    \left[\frac{d}{\left|d\right|}
+          +\textrm{erf}\left(\frac{x-b}{\sqrt{2}c}
+                             - \frac{c}{\sqrt{2}d}\right)
+    \right]"/></p>
+</div><p>The exponentially modified Gaussian is a convolution of Gaussian and
+exponential probability density.
+<em>a</em> = Gaussian heigth,
+<em>b</em> = location parameter (Gaussian center),
+<em>c</em> = Gaussian width,
+<em>d</em> = distortion parameter (a.k.a. modification factor or time constant).</p>
+<p><strong id="LogNormal">LogNormal</strong>:</p>
+<div class="math">
+<p><img src="_images/math/88dc7152312ed3d59df7ceb507f484e3a8566279.png" alt="y = h \exp\left\{ -\ln(2) \left[
+                                \frac{\ln\left(1+2b\frac{x-c}{w}\right)}{b}
+                         \right]^{2} \right\}"/></p>
+</div><p><strong id="DoniachSunjic">Doniach-Sunjic (DoniachSunjic)</strong>:</p>
+<div class="math">
+<p><img src="_images/math/084b4487d16c50fe1973da2e87688e99b280f99e.png" alt="y = \frac{h\left[\frac{\pi a}{2}
+                 + (1-a)\arctan\left(\frac{x-E}{F}\right)\right]}
+         {F+(x-E)^2}"/></p>
+</div><p><strong id="Polynomial5">Polynomial5</strong>:</p>
+<div class="math">
+<p><img src="_images/math/704b2022e99607534d24d3be6ba50dd4616b80fe.png" alt="y = a_0 + a_1 x +a_2 x^2 + a_3 x^3 + a_4 x^4 + a_5 x^5"/></p>
+</div><p><strong id="Sigmoid">Sigmoid</strong>:</p>
+<div class="math">
+<p><img src="_images/math/37f8564f4f23c376746d9dad98ee539cf98c1049.png" alt="y = L + \frac{U-L}{1+\exp\left(-\frac{x-x_{mid}}{w}\right)}"/></p>
+</div><p><strong id="FCJAsymm">FCJAsymm</strong>:</p>
+<p>Axial asymmetry peak shape in the Finger, Cox and Jephcoat model, see
+<a class="reference external" href="http://dx.doi.org/10.1107/S0021889894004218">J. Appl. Cryst. (1994) 27, 892</a>
+and <a class="reference external" href="http://dx.doi.org/10.1107/S0021889813016233">J. Appl. Cryst. (2013) 46, 1219</a>.</p>
+</div>
+<div class="section" id="variadic-functions">
+<h2>Variadic Functions<a class="headerlink" href="#variadic-functions" title="Permalink to this headline">¶</a></h2>
+<p><em>Variadic</em> function types have variable number of parameters.
+Two variadic function types are defined:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>Spline(x1, y1, x2, y2, ...)
+Polyline(x1, y1, x2, y2, ...)
+</pre></div>
+</div>
+<p>This example:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>%f = Spline(22.1, 37.9, 48.1, 17.2, 93.0, 20.7)
+</pre></div>
+</div>
+<p>creates a function that is a <em>natural cubic spline</em> interpolation
+through points (22.1, 37.9), (48.1, 17.2), ….</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Polyline</span></code> function is a polyline interpolation (spline of order 1).</p>
+<p>Both <code class="docutils literal notranslate"><span class="pre">Spline</span></code> and <code class="docutils literal notranslate"><span class="pre">Polyline</span></code> functions are primarily used
+for the manual baseline subtraction via the GUI.</p>
+<p>The derivatives of Spline function are not calculated, so this function
+is not refined by the default, derivative-based fitting algorithm.</p>
+<p>Since the Polyline derivatives are calculated, it is possible to perform
+weighted least squares approximation by broken lines, although
+non-linear fitting algorithms are not optimal for this task.</p>
+</div>
+<div class="section" id="user-defined-functions-udf">
+<span id="udf"></span><h2>User-Defined Functions (UDF)<a class="headerlink" href="#user-defined-functions-udf" title="Permalink to this headline">¶</a></h2>
+<p>User-defined function types can be added using command <code class="docutils literal notranslate"><span class="pre">define</span></code>,
+and then used in the same way as built-in functions.</p>
+<p>Example:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>define MyGaussian(height, center, hwhm) = height*exp(-ln(2)*((x-center)/hwhm)^2)
+</pre></div>
+</div>
+<ul>
+<li><p>The name of new type must start with an upper-case letter,
+contain only letters and digits and have at least two characters.</p></li>
+<li><p>The name of the type is followed by parameters in brackets.</p></li>
+<li><p>Parameter name must start with lowercase letter and,
+contain only lowercase letters, digits and the underscore (‘_’).</p></li>
+<li><p>The name “x” is reserved, do not put it into parameter list,
+just use it on the right-hand side of the definition.</p></li>
+<li><p>There are special names of parameters that Fityk understands:</p>
+<ul class="simple">
+<li><p>if the functions is peak-like (bell-shaped):
+<code class="docutils literal notranslate"><span class="pre">height</span></code>, <code class="docutils literal notranslate"><span class="pre">center</span></code>, <code class="docutils literal notranslate"><span class="pre">hwhm</span></code>, <code class="docutils literal notranslate"><span class="pre">area</span></code>,</p></li>
+<li><p>if the functions is S-shaped (sigmoidal) or step-like:
+<code class="docutils literal notranslate"><span class="pre">lower</span></code>, <code class="docutils literal notranslate"><span class="pre">upper</span></code>, <code class="docutils literal notranslate"><span class="pre">xmid</span></code>, <code class="docutils literal notranslate"><span class="pre">wsig</span></code>,</p></li>
+<li><p>if the function is more like linear:
+<code class="docutils literal notranslate"><span class="pre">slope</span></code>, <code class="docutils literal notranslate"><span class="pre">intercept</span></code>, <code class="docutils literal notranslate"><span class="pre">avgy</span></code>.</p></li>
+</ul>
+<p>The initial values of these parameters can be guessed (command <code class="docutils literal notranslate"><span class="pre">guess</span></code>)
+from the data.  <code class="docutils literal notranslate"><span class="pre">hwhm</span></code> means half width at half maximum,
+the other names are self-explaining.</p>
+</li>
+<li><p>Each parameter may have a default value (see the examples below).
+The default value can be either a number or an expression that depends
+on the parameters listed above (e.g. <code class="docutils literal notranslate"><span class="pre">0.8*hwhm</span></code>).
+The default value always binds a simple-variable to the parameter.</p></li>
+</ul>
+<p>UDFs can be defined in a few ways:</p>
+<ul class="simple">
+<li><p>by giving a full formula, like in the example above,</p></li>
+<li><p>as a <em class="dfn">re-parametrization</em> of existing function
+(see the <code class="docutils literal notranslate"><span class="pre">GaussianArea</span></code> example below),</p></li>
+<li><p>as a sum of already defined functions
+(see the <code class="docutils literal notranslate"><span class="pre">GLSum</span></code> example below),</p></li>
+<li><p>as a split (bifurcated) function:
+<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span></code> <em>expression</em> <code class="docutils literal notranslate"><span class="pre">?</span></code> <em>Function1(…)</em> <code class="docutils literal notranslate"><span class="pre">:</span></code> <em>Function2(…)</em>
+(see the <code class="docutils literal notranslate"><span class="pre">SplitL</span></code> example below).</p></li>
+</ul>
+<p>When giving a full formula, the right-hand side of the equality sign
+is similar to the <a class="reference internal" href="#variables"><span class="std std-ref">definiton of variable</span></a>,
+but the formula can also depend on <em>x</em>.
+Hopefully the examples can make the syntax clear:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="c"># this is how some built-in functions could be defined</span>
+define MyGaussian(height, center, hwhm) = height*exp(-ln(2)*((x-center)/hwhm)^2)
+define MyLorentzian(height, center, hwhm) = height/(1+((x-center)/hwhm)^2)
+define MyCubic(a0=height,a1=0, a2=0, a3=0) = a0 + a1*x + a2*x^2 + a3*x^3
+
+<span class="c"># supersonic beam arrival time distribution</span>
+define SuBeArTiDi(c, s, v0, dv) = c*(s/x)^3*exp(-(((s/x)-v0)/dv)^2)/x
+
+<span class="c"># area-based Gaussian can be defined as modification of built-in Gaussian</span>
+<span class="c"># (it is the same as built-in GaussianA function)</span>
+define GaussianArea(area, center, hwhm) = Gaussian(area/hwhm/sqrt(pi/ln(2)), center, hwhm)
+
+<span class="c"># sum of Gaussian and Lorentzian, a.k.a. PseudoVoigt (should be in one line)</span>
+define GLSum(height, center, hwhm, shape) = Gaussian(height*(1-shape), center, hwhm)
++ Lorentzian(height*shape, center, hwhm)
+
+<span class="c"># split-Gaussian, the same as built-in SplitGaussian (should be in one line)</span>
+define SplitG(height, center, hwhm1=fwhm*0.5, hwhm2=fwhm*0.5) =
+  x &lt; center ? Lorentzian(height, center, hwhm1)
+             : Lorentzian(height, center, hwhm2)
+</pre></div>
+</div>
+<p>There is a simple substitution mechanism that makes writing complicated
+functions easier.
+Substitutions must be assigned in the same line, after the keyword <code class="docutils literal notranslate"><span class="pre">where</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>define ReadShockley(sigma0=1, a=1) = sigma0 * t * (a - ln(t)) where t=x*pi/180
+
+<span class="c"># more complicated example, with nested substitutions</span>
+define FullGBE(k, alpha) = k * alpha * eta * (eta / tanh(eta) - ln (2*sinh(eta))) where eta = 2*pi/alpha * sin(theta/2), theta=x*pi/180
+</pre></div>
+</div>
+<div class="admonition-how-it-works-internally admonition">
+<p class="admonition-title">How it works internally</p>
+<p>The formula is parsed,
+derivatives of the formula are calculated symbolically,
+expressions are simplified
+and bytecode for virtual machine (VM) is created.</p>
+<p>When fitting, the VM calculates the value of the function
+and derivatives for every point.</p>
+</div>
+<p>Defined functions can be undefined using command <code class="docutils literal notranslate"><span class="pre">undefine</span></code>:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>undefine GaussianArea
+</pre></div>
+</div>
+<p>It is common to add own definitions to the <code class="file docutils literal notranslate"><span class="pre">init</span></code> file.
+See the section <a class="reference internal" href="ref.html#invoking"><span class="std std-ref">Starting fityk and cfityk</span></a> for details.</p>
+</div>
+<div class="section" id="cutoff">
+<span id="function-cutoff"></span><h2>Cutoff<a class="headerlink" href="#cutoff" title="Permalink to this headline">¶</a></h2>
+<p>With default settings, the value of every function is calculated
+at every point. Peak functions, such as Gaussian, often have non-negligible
+values only in a small fraction of all points,
+so if you have many narrow peaks
+(like <a class="reference external" href="http://commons.wikimedia.org/wiki/File:Diff_NaBr.png">here</a>),
+the basic optimization is to calculate values of each peak function
+only near the function’s center.
+If the option <code class="xref std std-option docutils literal notranslate"><span class="pre">function_cutoff</span></code> is set to a non-zero value,
+each function is evaluated only in the range where its values are
+greater than the <code class="xref std std-option docutils literal notranslate"><span class="pre">function_cutoff</span></code>.</p>
+<p>This optimization is supported only by some built-in functions.</p>
+</div>
+<div class="section" id="model-f-and-z">
+<h2>Model, F and Z<a class="headerlink" href="#model-f-and-z" title="Permalink to this headline">¶</a></h2>
+<p>As already discussed, each dataset has a separate model
+that can be fitted to the data.
+As can be seen from the <a class="reference internal" href="#model-formula"><span class="std std-ref">formula</span></a> at the beginning
+of this chapter, the model is defined as a set functions <img class="math" src="_images/math/5c00c0eb909b5784a7d47c3827c33abdc80f002a.png" alt="f_i" style="vertical-align: -4px"/>
+and a set of functions <img class="math" src="_images/math/d7de29b739d675cc83ecf3b394b61b17b021d210.png" alt="z_i" style="vertical-align: -3px"/>.
+These sets are named <em>F</em> and <em>Z</em> respectively.
+The model is constructed by specifying names of functions in these two sets.</p>
+<p>In many cases <em class="dfn">x-correction</em> Z is not used.
+The fitted curve is thus the sum of all functions in F.</p>
+<p>Command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>F += %function
+</pre></div>
+</div>
+<p>adds  <em>%function</em> to F, and</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>Z += %function
+</pre></div>
+</div>
+<p>adds <em>%function</em> to Z.</p>
+<p>A few examples:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="c"># create and add function to F</span>
+%g = Gaussian(height=~66254., hwhm=~0.264, center=~24.7)
+F += %g
+
+<span class="c"># create unnamed function and add it to F</span>
+F += Gaussian(height=~66254., hwhm=~0.264, center=~24.7)
+
+<span class="c"># clear F</span>
+F = 0
+
+<span class="c"># clear F and put three functions in it</span>
+F = %a + %b + %c
+
+<span class="c"># show info about the first and the last function in F</span>
+info F[0], F[-1]
+</pre></div>
+</div>
+<p>The next sections shows an easier way to add a function (command <code class="docutils literal notranslate"><span class="pre">guess</span></code>).</p>
+<p>If there is more than one dataset, F and Z can be prefixed
+with the dataset number (e.g. <code class="docutils literal notranslate"><span class="pre">&#64;1.F</span></code>).</p>
+<p>The model can be copied. To copy the model from <code class="docutils literal notranslate"><span class="pre">&#64;0</span></code> to <code class="docutils literal notranslate"><span class="pre">&#64;1</span></code>
+we type one of the two commands:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>@1.F = @0.F        <span class="c"># shallow copy</span>
+@1.F = copy(@0.F)  <span class="c"># deep copy</span>
+</pre></div>
+</div>
+<p>The former command uses the same functions in both models: if you shift
+a peak in <code class="docutils literal notranslate"><span class="pre">&#64;1</span></code>, it will be also shifted in <code class="docutils literal notranslate"><span class="pre">&#64;0</span></code>. The latter command
+(deep copy) duplicates all functions and variables and makes an independent
+model.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>click the button <img alt="Copy-Model" class="icon" src="_images/copyfunc_icon.png" /> on the sidebar to make a deep copy.</p>
+</div>
+<p>It is often required to keep the width or shape of peaks constant
+for all peaks in the dataset. To change the variables bound to parameters
+with a given name for all functions in F, use the command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>F[*].param = variable
+</pre></div>
+</div>
+<p>Examples:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="c"># Set hwhm of all functions in F that have a parameter hwhm to $foo</span>
+<span class="c"># (hwhm here means half-width-at-half-maximum)</span>
+F[*].hwhm = $foo
+
+<span class="c"># Bound the variable used for the shape of peak %_1 to shapes of all</span>
+<span class="c"># functions in F</span>
+F[*].shape = %_1.shape
+
+<span class="c"># Create a new simple-variable for each function in F and bound the</span>
+<span class="c"># variable to parameter hwhm. All hwhm parameters will be independent.</span>
+F[*].hwhm = ~0.2
+</pre></div>
+</div>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>buttons <img alt="=W" class="icon" src="_images/eq_fwhm_icon.png" /> and <img alt="=S" class="icon" src="_images/eq_shape_icon.png" /> on the sidebar make,
+respectively, the HWHM and shape of all functions the same.
+Pressing the buttons again will make all the parameters independent.</p>
+</div>
+</div>
+<div class="section" id="guessing-initial-parameters">
+<span id="guess"></span><h2>Guessing Initial Parameters<a class="headerlink" href="#guessing-initial-parameters" title="Permalink to this headline">¶</a></h2>
+<p>The program can automatically set initial parameters of peaks (using
+peak-detection algorithm) and lines (using linear regression).
+Choosing initial parameters of a function by the program
+will be called <em class="dfn">guessing</em>.</p>
+<p>It is possible to guess peak location and add it to <em>F</em> with the command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>guess [%name =] PeakType [(initial values...)] [[x1:x2]]
+</pre></div>
+</div>
+<p>Examples:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="c"># add Gaussian in the given range</span>
+@0: guess Gaussian [22.1:30.5]
+
+<span class="c"># the same, but name the new function %f1</span>
+@0: guess %f1 = Gaussian [22.1:30.5]
+
+<span class="c"># search for the peak in the whole dataset</span>
+@0: guess Gaussian
+
+<span class="c"># add one Gaussian to each dataset</span>
+@*: guess Gaussian
+
+<span class="c"># set the center and shape explicitely (determine height and width)</span>
+guess PseudoVoigt(center=$ctr, shape=~0.3) [22.1:30.5]
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Name of the function is optional.</p></li>
+<li><p>Some of the parameters can be specified in brackets.</p></li>
+<li><p>If the range is omitted, the whole dataset will be searched.</p></li>
+</ul>
+<p>Fityk offers a simple algorithm for peak-detection.
+It finds the highest point in the given range (<code class="docutils literal notranslate"><span class="pre">center</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code>),
+and than tries to find the width of the peak (<code class="docutils literal notranslate"><span class="pre">hwhm</span></code>, and <code class="docutils literal notranslate"><span class="pre">area</span></code>
+= <em>height</em> × <em>hwhm</em>).</p>
+<p>If the highest point is at boundary of the given range,
+the points from the boundary to the nearest local minimum are ignored.</p>
+<p>The values of height and width found by the algorithm
+are multiplied by the values of options <code class="xref std std-option docutils literal notranslate"><span class="pre">height_correction</span></code>
+and <code class="xref std std-option docutils literal notranslate"><span class="pre">width_correction</span></code>, respectively. The default value for both
+options is 1.</p>
+<p>Another simple algorithm can roughly estimate initial parameters of sigmoidal
+functions.</p>
+<p>The linear traits <code class="docutils literal notranslate"><span class="pre">slope</span></code> and <code class="docutils literal notranslate"><span class="pre">intercept</span></code> are calculated using linear
+regression (without weights of points).
+<code class="docutils literal notranslate"><span class="pre">avgy</span></code> is calculated as average value of <em>y</em>.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>select a function from the list of functions on the toolbar
+and press <img alt="Auto Add" class="icon" src="_images/add_peak_icon.png" /> to add (guess) the selected function.</p>
+<p>To choose a data range change the GUI mode to <img alt="Add-Peak Mode" class="icon" src="_images/mode_add_icon.png" />
+and select the range with the right mouse button.</p>
+</div>
+</div>
+<div class="section" id="displaying-information">
+<h2>Displaying Information<a class="headerlink" href="#displaying-information" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">info</span></code> command can be show useful information when constructing
+the model.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">types</span></code></dt><dd><p>shows the list of available function types.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">FunctionType</span></code></dt><dd><p>(e.g. <code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">Pearson7</span></code>) shows the formula (definition).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">guess</span> <span class="pre">[range]</span></code></dt><dd><p>shows where the <code class="docutils literal notranslate"><span class="pre">guess</span></code> command would locate a peak.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">functions</span></code></dt><dd><p>lists all defined functions.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">variables</span></code></dt><dd><p>lists all defined variables.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">F</span></code></dt><dd><p>lists components of <em>F</em>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">Z</span></code></dt><dd><p>lists components of <em>Z</em>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">formula</span></code></dt><dd><p>shows the full mathematical formula of the fitted model.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">simplified_formula</span></code></dt><dd><p>shows the same, but the formula is simplified.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">gnuplot_formula</span></code></dt><dd><p>shows same as <code class="docutils literal notranslate"><span class="pre">formula</span></code>, but the output is readable by gnuplot,
+e.g. <code class="docutils literal notranslate"><span class="pre">x^2</span></code> is replaced by  <code class="docutils literal notranslate"><span class="pre">x**2</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">simplified_gnuplot_formula</span></code></dt><dd><p>shows the simplified formula in the gnuplot format.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">peaks</span></code></dt><dd><p>show a formatted list of parameters of functions in <em>F</em>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">peaks_err</span></code></dt><dd><p>shows the same data, additionally including uncertainties of the parameters.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">models</span></code></dt><dd><p>a script that reconstructs all variables, functions and models.</p>
+</dd>
+</dl>
+<p>The last two commands are often redirected to a file
+(<code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">peaks</span> <span class="pre">&gt;</span> <span class="pre">filename</span></code>).</p>
+<p>The complete list of <code class="docutils literal notranslate"><span class="pre">info</span></code> arguments can be found in <a class="reference internal" href="ref.html#info"><span class="std std-ref">Information Display</span></a>.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>most of the above commands has clickable equivalents.</p>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+ <a href="http://fityk.nieto.pl/">
+  <img class="logo" src="_static/fityk-logo.png" alt="Logo"/>
+ </a>
+<br/ >curve fitting,&nbsp; data analysis
+
+</p>
+
+<h3><a href="fityk-manual.html">Manual</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#variables">Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#domains">Domains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#function-types-and-functions">Function Types and Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#built-in-functions">Built-In Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#variadic-functions">Variadic Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#user-defined-functions-udf">User-Defined Functions (UDF)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cutoff">Cutoff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-f-and-z">Model, F and Z</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#guessing-initial-parameters">Guessing Initial Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#displaying-information">Displaying Information</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fit.html">Curve Fitting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="script.html">Scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ref.html">All the Rest</a></li>
+</ul>
+
+<ul>
+ <li class="toctree-l1">
+ <a class="reference external" href="https://github.com/wojdyr/fityk/wiki">Wiki</a>
+ </li>
+</ul>
+<div id="searchbox" role="search">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="12" />
+      <input type="submit" value="Search" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+   <div class="related" role="navigation" aria-label="related navigation">
+    Next: <a href="fit.html">Curve Fitting</a>
+   </div>
+
+  <div class="footer" role="contentinfo">
+    Updated on 2021-09-06 with Sphinx 3.5.3.
+        | <a href="https://github.com/wojdyr/fityk/blob/master/doc/model.rst"
+          rel="nofollow">Edit on GitHub</a>
+  </div>
+  </body>
+</html>

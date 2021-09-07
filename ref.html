@@ -1,0 +1,409 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>All the Rest &#8212; Fityk 1.3.1 manual</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/fitheme.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/fityk.ico"/>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Scripts" href="script.html" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="all-the-rest">
+<span id="ref"></span><h1>All the Rest<a class="headerlink" href="#all-the-rest" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="settings">
+<span id="id1"></span><h2>Settings<a class="headerlink" href="#settings" title="Permalink to this headline">¶</a></h2>
+<p>The syntax is simple:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">option</span> <span class="pre">=</span> <span class="pre">value</span></code> changes the <em>option</em>,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">set</span> <span class="pre">option</span></code> shows the current value,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">set</span></code> lists all available options.</p></li>
+</ul>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>the options can be set in a dialog (<span class="menuselection">Session ‣ Settings</span>).</p>
+<p>The GUI configuration (colors, fonts, etc.) is changed in a different
+way (<span class="menuselection">GUI ‣ …</span>) and is not covered here.</p>
+</div>
+<p>It is possible to change the value of the option temporarily:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>with option1=value1 [,option2=value2]  command args...
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>info set fitting_method  <span class="c"># show the current fitting method</span>
+set fitting_method = nelder_mead_simplex <span class="c"># change the method</span>
+<span class="c"># change the method only for this one fit command</span>
+with fitting_method = levenberg_marquardt fit
+<span class="c"># and now the default method is back Nelder-Mead</span>
+
+<span class="c"># multiple comma-separated options can be given</span>
+with fitting_method=levenberg_marquardt, verbosity=quiet fit
+</pre></div>
+</div>
+<p>The list of available options:</p>
+<dl class="simple">
+<dt>autoplot</dt><dd><p>See <a class="reference internal" href="#autoplot"><span class="std std-ref">autoplot</span></a>.</p>
+</dd>
+<dt>cwd</dt><dd><p>Current working directory or empty string if it was not set explicitely.
+Affects relative paths.</p>
+</dd>
+<dt>default_sigma</dt><dd><p>Default <em>y</em> standard deviation. See <a class="reference internal" href="data.html#weights"><span class="std std-ref">Standard Deviation (or Weight)</span></a>.
+Possible values: <code class="docutils literal notranslate"><span class="pre">sqrt</span></code> max(<em>y</em><sup>1/2</sup>, 1) and <code class="docutils literal notranslate"><span class="pre">one</span></code> (1).</p>
+</dd>
+<dt>domain_percent</dt><dd><p>See <a class="reference internal" href="model.html#domain"><span class="std std-ref">the section about variables</span></a>.</p>
+</dd>
+</dl>
+<dl class="simple" id="epsilon">
+<dt>epsilon</dt><dd><p>The <em>ε</em> value used to test floating-point numbers <em>a</em> and <em>b</em> for equality
+(it is well known that due to rounding errors the equality test for two
+numbers should have some tolerance, and the tolerance should be tailored
+to the application): |<em>a−b</em>| &lt; <em>ε</em>. Default value: 10<sup>-12</sup>.
+You may need to decrease it when working with very small numbers.</p>
+</dd>
+<dt>fit_replot</dt><dd><p>Refresh the plot when fitting (0/1).</p>
+</dd>
+<dt>fitting_method</dt><dd><p>See <a class="reference internal" href="fit.html#fitting-cmd"><span class="std std-ref">Fitting Related Commands</span></a>.</p>
+</dd>
+<dt>function_cutoff</dt><dd><p>See <a class="reference internal" href="model.html#function-cutoff"><span class="std std-ref">description in the chapter about model</span></a>.</p>
+</dd>
+<dt>height_correction</dt><dd><p>See <a class="reference internal" href="model.html#guess"><span class="std std-ref">Guessing Initial Parameters</span></a>.</p>
+</dd>
+<dt>lm_*</dt><dd><p>Setting to tune the <a class="reference internal" href="fit.html#levmar"><span class="std std-ref">Levenberg-Marquardt</span></a> fitting method.</p>
+</dd>
+<dt>logfile</dt><dd><p>String. File where the commands are logged. Empty – no logging.</p>
+</dd>
+<dt>log_output</dt><dd><p>When logfile is set, log output together with input (0/1).</p>
+</dd>
+<dt>max_fitting_time</dt><dd><p>Stop fitting when this number of seconds of processor time is exceeded.
+See <a class="reference internal" href="fit.html#fitting-cmd"><span class="std std-ref">Fitting Related Commands</span></a>.</p>
+</dd>
+<dt>max_wssr_evaluations</dt><dd><p>See <a class="reference internal" href="fit.html#fitting-cmd"><span class="std std-ref">Fitting Related Commands</span></a>.</p>
+</dd>
+<dt>nm_*</dt><dd><p>Setting to tune the <a class="reference internal" href="fit.html#nelder"><span class="std std-ref">Nelder-Mead downhill simplex</span></a>
+fitting method.</p>
+</dd>
+</dl>
+<dl class="simple" id="numeric-format">
+<dt>numeric_format</dt><dd><p>Format of numbers printed by the <code class="docutils literal notranslate"><span class="pre">info</span></code> command. It takes as a value
+a format string, the same as <code class="docutils literal notranslate"><span class="pre">sprintf()</span></code> in the C language.
+For example <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">numeric_format='%.3f'</span></code> changes the precision
+of numbers to 3 digits after the decimal point. Default value: <code class="docutils literal notranslate"><span class="pre">%g</span></code>.</p>
+</dd>
+<dt>on_error</dt><dd><p>Action performed on error. If the option is set to <code class="docutils literal notranslate"><span class="pre">stop</span></code>
+(default) and the error happens in script, the script is stopped.
+Other possible values are <code class="docutils literal notranslate"><span class="pre">nothing</span></code> (do nothing) and <code class="docutils literal notranslate"><span class="pre">exit</span></code>
+(finish program – ensures that no error can be overlooked).</p>
+</dd>
+<dt>pseudo_random_seed</dt><dd><p>Some fitting methods and functions, such as
+<code class="docutils literal notranslate"><span class="pre">randnormal</span></code> in data expressions use a pseudo-random
+number generator.  In some situations one may want to have repeatable
+and predictable results of the fitting, e.g.  to make a presentation.
+Seed for a new sequence of pseudo-random numbers can be set using the
+option <code class="xref std std-option docutils literal notranslate"><span class="pre">pseudo_random_seed</span></code>.  If it
+is set to 0, the seed is based on the current time and a sequence of
+pseudo-random numbers is different each time.</p>
+</dd>
+<dt>refresh_period</dt><dd><p>During time-consuming computations (like fitting) user interface can
+remain not changed for this time (in seconds).
+This option was introduced, because on one hand frequent refreshing of
+the program’s window notably slows down fitting, and on the other hand
+irresponsive program is a frustrating experience.</p>
+</dd>
+<dt>verbosity</dt><dd><p>Possible values: -1 (silent), 0 (normal), 1 (verbose), 2 (very verbose).</p>
+</dd>
+<dt>width_correction</dt><dd><p>See <a class="reference internal" href="model.html#guess"><span class="std std-ref">Guessing Initial Parameters</span></a>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="data-view">
+<h2>Data View<a class="headerlink" href="#data-view" title="Permalink to this headline">¶</a></h2>
+<p>The command <code class="docutils literal notranslate"><span class="pre">plot</span></code> controls the region of the graph that is displayed:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>plot [[xrange] yrange] [@n, ...]
+</pre></div>
+</div>
+<p><em>xrange</em> and <em>yrange</em> has syntax <code class="docutils literal notranslate"><span class="pre">[min:max]</span></code>. If the boundaries
+are skipped, they are automatically determined using the given datasets.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>there is hardly ever a need to use this command directly.</p>
+</div>
+<p>The CLI version on Unix systems visualizes the data using the <code class="docutils literal notranslate"><span class="pre">gnuplot</span></code>
+program, which has similar syntax for the plot range.</p>
+<p>Examples:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>plot [20.4:50] [10:20] <span class="c"># show x from 20.4 to 50 and y from 10 to 20</span>
+plot [20.4:] <span class="c"># x from 20.4 to the end,</span>
+             <span class="c"># y range will be adjusted to encompass all data</span>
+plot         <span class="c"># all data will be shown</span>
+</pre></div>
+</div>
+<p id="autoplot">The values of the options <code class="xref std std-option docutils literal notranslate"><span class="pre">autoplot</span></code> and <code class="xref std std-option docutils literal notranslate"><span class="pre">fit_replot</span></code>
+change the automatic plotting behaviour. By default, the plot is
+refreshed automatically after changing the data or the model (<code class="docutils literal notranslate"><span class="pre">autoplot=1</span></code>).
+It is also possible to replot the model when fitting, to show the progress
+(see the options <code class="xref std std-option docutils literal notranslate"><span class="pre">fit_replot</span></code> and <code class="xref std std-option docutils literal notranslate"><span class="pre">refresh_period</span></code>).</p>
+<p>Redirecting the plot command to a file saves a plot as an image:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>plot [20.4:50] [10:20] &gt; myplot.png
+</pre></div>
+</div>
+<p>For now, it works only in fityk (not cfityk) and is less flexible than
+<span class="menuselection">Session ‣ Save as Image</span>.</p>
+</div>
+<div class="section" id="information-display">
+<span id="info"></span><h2>Information Display<a class="headerlink" href="#information-display" title="Permalink to this headline">¶</a></h2>
+<p>First, there is an option <code class="xref std std-option docutils literal notranslate"><span class="pre">verbosity</span></code>
+which sets the amount of messages displayed when executing commands.</p>
+<p>There are three commands that print explicitely requested information:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span></code> – used to show preformatted information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">print</span></code> – mainly used to output numbers (expression values)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">debug</span></code> – used for testing the program itself</p></li>
+</ul>
+<p>The output of <code class="docutils literal notranslate"><span class="pre">info</span></code> and <code class="docutils literal notranslate"><span class="pre">print</span></code> can be redirected to a file:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>info args &gt; filename    <span class="c"># truncate the file</span>
+info args &gt;&gt; filename   <span class="c"># append to the file</span>
+info args &gt; <span class="s1">&#39;filename&#39;</span>  <span class="c"># the filename can (and sometimes must) be in quotes</span>
+</pre></div>
+</div>
+<p>The redirection can create a file, so there is also a command to delete it:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>delete file filename
+</pre></div>
+</div>
+<div class="section" id="id2">
+<h3>info<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>The following <code class="docutils literal notranslate"><span class="pre">info</span></code> arguments are recognized:</p>
+<ul class="simple">
+<li><p><em>TypeName</em> – definition</p></li>
+<li><p><em>$variable_name</em> – formula and value</p></li>
+<li><p><em>%function_name</em> – formula</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">F</span></code> – the list of functions in <em>F</em></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Z</span></code> – the list of functions in <em>Z</em></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">compiler</span></code> – options used when compiling the program</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">confidence</span> <span class="pre">level</span> <span class="pre">&#64;n</span></code> – confidence limits for given confidence level</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cov</span> <span class="pre">&#64;n</span></code> – covariance matrix</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data</span></code> – number of points, data filename and title</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dataset_count</span></code> – number of datasets</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">errors</span> <span class="pre">&#64;n</span></code> – estimated uncertainties of parameters</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filename</span></code> – dataset filename</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fit</span></code> – goodness of fit</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fit_history</span></code> – info about recorded parameter sets</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">formula</span></code> – full formula of the model</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">functions</span></code> – the list of %functions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gnuplot_formula</span></code> – full formula of the model, gnuplot style</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">guess</span></code> – peak-detection and linear regression info</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">guess</span> <span class="pre">[from:to]</span></code> – the same, but in the given range</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">history</span></code> – the list of all the command issued in this session</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">history</span> <span class="pre">[m:n]</span></code> – selected commands from the history</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">history_summary</span></code> – the summary of command history</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">models</span></code> – script that re-constructs all variables, functions and models</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">peaks</span></code> – formatted list of parameters of functions in <em>F</em>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">peaks_err</span></code> – the same as peaks + uncertainties</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prop</span></code> <em>%function_name</em> – parameters of the function</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">refs</span></code> <em>$variable_name</em> – references to the variable</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set</span></code> – the list of settings</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set</span></code> <em>option</em> – the current value of the option</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simplified_formula</span></code> – simplified formula</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">simplified_gnuplot_formula</span></code> – simplified formula, gnuplot style</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state</span></code> – generates a script that can reproduce the current state
+of the program. The scripts embeds all datasets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">title</span></code> – dataset title</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">types</span></code> – the list of function types</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">variables</span></code> – the list of variables</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">version</span></code> – version number</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">view</span></code> – boundaries of the visualized rectangle</p></li>
+</ul>
+<p>Both <code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">state</span></code> and <code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">history</span></code> can be used to restore the current
+session.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p><span class="menuselection">Session ‣ Save State</span> and
+<span class="menuselection">Session ‣ Save History</span>.</p>
+</div>
+</div>
+<div class="section" id="print">
+<h3>print<a class="headerlink" href="#print" title="Permalink to this headline">¶</a></h3>
+<p>The print command is followed by a comma-separated list of expressions
+and/or strings:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>p pi, pi^2, pi^3
+3.14159 9.8696 31.0063
+<span class="gp">=-&gt; </span>with numeric_format=<span class="s1">&#39;%.15f&#39;</span> print pi
+3.141592653589793
+<span class="gp">=-&gt; </span>p <span class="s1">&#39;2+3 =&#39;</span>, 2+3
+2+3 = 5
+</pre></div>
+</div>
+<p>The other valid arguments are <code class="docutils literal notranslate"><span class="pre">filename</span></code> and <code class="docutils literal notranslate"><span class="pre">title</span></code>.
+They are useful for listing the same values for multiple datasets, e.g.:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>@*: print filename, F[0].area, F[0].area.error
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">print</span></code> can also print a list where each line corresponds to one data point,
+as described in the section <a class="reference internal" href="data.html#dexport"><span class="std std-ref">Exporting Data</span></a>.</p>
+<p>As an exception, <code class="docutils literal notranslate"><span class="pre">print</span> <span class="pre">expression</span> <span class="pre">&gt;</span> <span class="pre">filename</span></code> does not work
+if the filename is not enclosed in single quotes. That is because the parser
+interprets <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> as a part of the expression.
+Just use quotes (<code class="docutils literal notranslate"><span class="pre">print</span> <span class="pre">2+3</span> <span class="pre">&gt;</span> <span class="pre">'tmp.dat'</span></code>).</p>
+</div>
+<div class="section" id="debug">
+<h3>debug<a class="headerlink" href="#debug" title="Permalink to this headline">¶</a></h3>
+<p>Only a few <code class="docutils literal notranslate"><span class="pre">debug</span></code> sub-commands are documented here:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">der</span></code> <em>mathematic-function</em> – shows derivatives:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span><span class="gp">=-&gt; </span>debug der sin(a) + 3*exp(b/a)
+f(a, b) = sin(a)+3*exp(b/a)
+df / d a = cos(a)-3*exp(b/a)*b/a^2
+df / d b = 3*exp(b/a)/a
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">df</span></code> <em>x</em> – compares the symbolic and numerical derivatives of <em>F</em> in <em>x</em>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lex</span></code> <em>command</em> – the list of tokens from the Fityk lexer</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parse</span></code> <em>command</em> – show the command as stored after parsing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">expr</span></code> <em>expression</em> – VM code from the expression</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rd</span></code> – derivatives for all variables</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%function</span></code> – bytecode, if available</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$variable</span></code> – derivatives</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="other-commands">
+<h2>Other Commands<a class="headerlink" href="#other-commands" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">reset</span></code> – reset the session</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sleep</span></code> <em>sec</em> – makes the program wait <em>sec</em> seconds.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quit</span></code> – works as expected; if it is found in a script it quits
+the program, not only the script.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">!</span></code> – commands that start with <code class="docutils literal notranslate"><span class="pre">!</span></code> are passed (without the <code class="docutils literal notranslate"><span class="pre">!</span></code>)
+to the <code class="docutils literal notranslate"><span class="pre">system()</span></code> call (i.e. to the operating system).</p></li>
+</ul>
+</div>
+<div class="section" id="starting-fityk-and-cfityk">
+<span id="invoking"></span><h2>Starting fityk and cfityk<a class="headerlink" href="#starting-fityk-and-cfityk" title="Permalink to this headline">¶</a></h2>
+<p>On startup, the program runs a script from the
+<code class="file docutils literal notranslate"><span class="pre">$HOME/.fityk/init</span></code> file (on MS Windows XP:
+<code class="file docutils literal notranslate"><span class="pre">C:\Documents</span> <span class="pre">and</span> <span class="pre">Settings\USERNAME\.fityk\init</span></code>).
+Following this, the program executes command passed with the <code class="docutils literal notranslate"><span class="pre">--cmd</span></code>
+option, if given, and processes command line arguments:</p>
+<ul class="simple">
+<li><p>if the argument starts with <code class="docutils literal notranslate"><span class="pre">=-&gt;</span></code>, the string following <code class="docutils literal notranslate"><span class="pre">=-&gt;</span></code>
+is regarded as a command and executed
+(otherwise, it is regarded as a filename),</p></li>
+<li><p>if the filename has extension “.fit” or the file begins with a “# Fityk”
+string, it is assumed to be a script and is executed,</p></li>
+<li><p>otherwise, it is assumed to be a data file;
+columns and data blocks can be specified in the normal way,
+see <a class="reference internal" href="data.html#dataload"><span class="std std-ref">Loading Data</span></a>.</p></li>
+</ul>
+<p>There are also other parameters to the CLI and GUI versions of the program.
+Option “-h” (“/h” on MS Windows) gives the full listing:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ fityk -h
+Usage: fityk [-h] [-V] [--full-version] [-c &lt;str&gt;] [-g &lt;str&gt;] [-I] [-r] [script or data file...]
+  -h, --help        	show this help message
+  -V, --version     	output version information and exit
+  --full-version    	print version with additional info and exit
+  -c, --cmd=&lt;str&gt;   	script passed in as string
+  -g, --config=&lt;str&gt;	choose GUI configuration
+  -I, --no-init     	don&#39;t process $HOME/.fityk/init file
+  -r, --reorder     	reorder data (50.xy before 100.xy)
+
+$ cfityk -h
+Usage: cfityk [-h] [-V] [-c &lt;str&gt;] [script or data file...]
+  -h, --help            show this help message
+  -V, --version         output version information and exit
+  -c, --cmd=&lt;str&gt;       script passed in as string
+  -I, --no-init         don&#39;t process $HOME/.fityk/init file
+  -n, --no-plot         disable plotting (gnuplot)
+  -q, --quit            don&#39;t enter interactive shell
+</pre></div>
+</div>
+<p>The example of non-interactive using CLI version on Linux:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>wojdyr@ubu:~/foo$ ls *.rdf
+dat_a.rdf  dat_r.rdf  out.rdf
+wojdyr@ubu:~/foo$ cfityk -q -I &quot;=-&gt; set verbosity=-1, autoplot=0&quot; \
+&gt; *.rdf &quot;=-&gt; @*: print min(x if y &gt; 0)&quot;
+in @0 dat_a: 1.8875
+in @1 dat_r: 1.5105
+in @2 out: 1.8305
+</pre></div>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+ <a href="http://fityk.nieto.pl/">
+  <img class="logo" src="_static/fityk-logo.png" alt="Logo"/>
+ </a>
+<br/ >curve fitting,&nbsp; data analysis
+
+</p>
+
+<h3><a href="fityk-manual.html">Manual</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fit.html">Curve Fitting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="script.html">Scripts</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">All the Rest</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#settings">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-view">Data View</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#information-display">Information Display</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">info</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#print">print</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#debug">debug</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#other-commands">Other Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#starting-fityk-and-cfityk">Starting fityk and cfityk</a></li>
+</ul>
+</li>
+</ul>
+
+<ul>
+ <li class="toctree-l1">
+ <a class="reference external" href="https://github.com/wojdyr/fityk/wiki">Wiki</a>
+ </li>
+</ul>
+<div id="searchbox" role="search">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="12" />
+      <input type="submit" value="Search" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+  <div class="footer" role="contentinfo">
+    Updated on 2021-09-06 with Sphinx 3.5.3.
+        | <a href="https://github.com/wojdyr/fityk/blob/master/doc/ref.rst"
+          rel="nofollow">Edit on GitHub</a>
+  </div>
+  </body>
+</html>

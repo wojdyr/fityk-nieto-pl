@@ -1,0 +1,683 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data &#8212; Fityk 1.3.1 manual</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/fitheme.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/fityk.ico"/>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Models" href="model.html" />
+    <link rel="prev" title="Getting Started" href="getstarted.html" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="data">
+<span id="id1"></span><h1>Data<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="loading-data">
+<span id="dataload"></span><h2>Loading Data<a class="headerlink" href="#loading-data" title="Permalink to this headline">¶</a></h2>
+<p>Data files are read using the <a class="reference external" href="http://xylib.sourceforge.net/">xylib library</a>.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>click <img alt="Load Data" class="icon" src="_images/load_data_icon.png" />. If it just works for your files, you may go
+straight to <a class="reference internal" href="#activepoints"><span class="std std-ref">Active and Inactive Points</span></a>.</p>
+</div>
+<p>Points are loaded from files using the command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>dataslot &lt; filename[:xcol:ycol:scol:block] [filetype options...]
+</pre></div>
+</div>
+<p>where</p>
+<ul class="simple">
+<li><p><em>dataslot</em> should be replaced with <code class="docutils literal notranslate"><span class="pre">&#64;0</span></code>, unless many datasets
+are to be used simultaneously (for details see: <a class="reference internal" href="#multidata"><span class="std std-ref">Working with Multiple Datasets</span></a>),</p></li>
+<li><p><em>xcol</em>, <em>ycol</em>, <em>scol</em> (supported only in text and CSV files) are columns
+corresponding to x, y and std. dev. of y.
+Column 0 means index of the point: 0 for the first point,
+1 for the second, etc.</p></li>
+<li><p><em>block</em> - selects one or more blocks of data from a multi-block file
+such as VAMAS</p></li>
+<li><p><em>filetype</em> usually can be omitted, because in most of the cases
+the filetype can be detected; the list of supported filetypes is
+at the end of this section</p></li>
+<li><p><em>options</em> depend on a filetype and usually are omitted</p></li>
+</ul>
+<p>If the filename contains blank characters, a semicolon or comma, it
+should be put inside single quotation marks (together with colon-separated
+indices, if any).</p>
+<p>A few examples should clarify it:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>@0 &lt; foo.vms
+@0 &lt; <span class="s1">&#39;foo.vms&#39;</span>  <span class="c"># filename can be quoted</span>
+@0 &lt; foo.fii text first_line_header  <span class="c"># with filetype options</span>
+@0 &lt; foo.csv:1:4::  <span class="c"># x,y - 1st and 4th columns</span>
+@0 &lt; foo.csv:1:2:3:  <span class="c"># read std. dev. of y from 3rd column</span>
+@0 &lt; foo.csv:0:1::  <span class="c"># x - index (0,1,2,...), y - first column</span>
+@0 &lt; foo.raw::::0,1  <span class="c"># load two first blocks of data (as one dataset)</span>
+</pre></div>
+</div>
+<p>You may also specify multiple <em>y</em> columns.
+It will load each <em>x</em>/<em>y</em> pair as a separate dataset.
+In this case you need to use <code class="docutils literal notranslate"><span class="pre">&#64;+</span> <span class="pre">&lt;</span> <span class="pre">...</span></code> (<code class="docutils literal notranslate"><span class="pre">&#64;+</span></code> denotes new dataslot):</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>@+ &lt; foo.csv:1:3,4:: <span class="c"># load two dataset (with y in columns 3,4)</span>
+@+ &lt; foo.csv:1:3..5:: <span class="c"># load three dataset (with y in columns 3,4,5)</span>
+@+ &lt; foo.csv:1:4..6,2:: <span class="c"># load four dataset (y: 4,5,6,2)</span>
+@+ &lt; foo.csv:1:2..:: <span class="c"># load 2nd and all the next columns as y</span>
+</pre></div>
+</div>
+<p>Information about loaded data can be obtained with:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>info data
+</pre></div>
+</div>
+<div class="section" id="supported-filetypes">
+<h3>Supported Filetypes<a class="headerlink" href="#supported-filetypes" title="Permalink to this headline">¶</a></h3>
+<dl class="simple">
+<dt>text</dt><dd><p>ASCII text, multicolumn numeric data.
+The details are given in the next section.</p>
+</dd>
+<dt>csv</dt><dd><p>CSV or TSV file. Similar to text but supports quoted (<code class="docutils literal notranslate"><span class="pre">&quot;</span></code>) values
+and uses different heuristic to interpret ambiguous cases.</p>
+</dd>
+<dt>dbws</dt><dd><p>format used by DBWS (program for Rietveld analysis) and DMPLOT.</p>
+</dd>
+<dt>canberra_cnf</dt><dd><p>Canberra CNF format</p>
+</dd>
+<dt>cpi</dt><dd><p>Sietronics Sieray CPI format</p>
+</dd>
+<dt>uxd</dt><dd><p>Siemens/Bruker UXD format (powder diffraction data)</p>
+</dd>
+<dt>bruker_raw</dt><dd><p>Simens-Bruker RAW format (version 1,2,3)</p>
+</dd>
+<dt>rigaku_dat</dt><dd><p>Rigaku dat format (powder diffraction data)</p>
+</dd>
+<dt>vamas</dt><dd><p>VAMAS ISO-14976
+(only experiment modes: “SEM” or “MAPSV” or “MAPSVDP” and
+only “REGULAR” scan mode are supported)</p>
+</dd>
+<dt>philips_udf</dt><dd><p>Philips UDF (powder diffraction data)</p>
+</dd>
+<dt>philips_rd</dt><dd><p>Philips RD raw scan format V3 (powder diffraction data)</p>
+</dd>
+<dt>spe</dt><dd><p>Princeton Instruments WinSpec SPE format
+(only 1-D data is supported)</p>
+</dd>
+<dt>pdcif</dt><dd><p>CIF for powder diffraction</p>
+</dd>
+</dl>
+<p>And a few others.
+The full list is available at: <a class="reference external" href="http://xylib.sourceforge.net/">http://xylib.sourceforge.net/</a>.</p>
+</div>
+<div class="section" id="reading-text-files">
+<h3>Reading Text Files<a class="headerlink" href="#reading-text-files" title="Permalink to this headline">¶</a></h3>
+<p>The <em>xylib</em> library can read TSV or CSV formats (tab or comma separated
+values). In fact, the values can be separated by any whitespace character
+or by one of ,;: punctations, or by any combination of these.</p>
+<p>Empty lines and comments that start with hash (#) are skipped.</p>
+<p>Since there is a lot of files in the world that contain numeric data mixed
+with text, unless the <code class="xref std std-option docutils literal notranslate"><span class="pre">strict</span></code> option is given
+any text that can not be interpreted as a number is regarded a start of
+comment (the rest of the line is ignored).</p>
+<p>Note that the file is parsed regardless of blocks and columns specified
+by the user. The data read from the file are first stored in a table
+with <em>m</em> columns and <em>n</em> rows.
+If some of the lines have 3 numbers in it, and some have 5 numbers, we can
+either discard the lines that have 3 numbers or we can discard the numbers
+in 4th and 5th column. Usually the latter is done, but there are exceptions.
+The shorter lines are ignored</p>
+<ul class="simple">
+<li><p>if it is the last line in the file
+(probably the program was terminated while writing the file),</p></li>
+<li><p>if it contains only one number, but the prior lines had more numbers
+(this may be a comment that starts with a number)</p></li>
+<li><p>if all the (not ignored) prior lines and the next line are longer</p></li>
+</ul>
+<p>These rule were introduced to read free-format log files with
+textual comments inserted between lines with numeric data.</p>
+<p>For now, xylib does not handle well nan’s and inf’s in the data.</p>
+<p>Data blocks and columns may have names. These names are used to set
+a title of the dataset (see <a class="reference internal" href="#multidata"><span class="std std-ref">Working with Multiple Datasets</span></a> for details).
+If the option <code class="xref std std-option docutils literal notranslate"><span class="pre">first_line_header</span></code> is given and the number of words
+in the first line is equal to the number of data columns,
+each word is used as a name of corresponding column.
+If the number of words is different, the first line is used as a name of the
+block.
+If the <code class="xref std std-option docutils literal notranslate"><span class="pre">last_line_header</span></code> option is given, the line preceding
+the first data line is used to set either column names or the block name.</p>
+<p>If the file starts with the “<code class="docutils literal notranslate"><span class="pre">LAMMPS</span> <span class="pre">(</span></code>” string,
+the <code class="xref std std-option docutils literal notranslate"><span class="pre">last_line_header</span></code> option is set automatically.
+This is very helpful when plotting data from LAMMPS log files.</p>
+</div>
+</div>
+<div class="section" id="active-and-inactive-points">
+<span id="activepoints"></span><h2>Active and Inactive Points<a class="headerlink" href="#active-and-inactive-points" title="Permalink to this headline">¶</a></h2>
+<p>We often have the situation that only a part of the data from a file is
+of interest. In Fityk, each point is either <em>active</em> or <em>inactive</em>.
+Inactive points are excluded from fitting and all calculations.
+(Since active points do not need to be in one region, we do not use
+the <em>region of interest</em> term here, but such region can be easy selected).
+A data <a class="reference internal" href="#transform"><span class="std std-ref">transformation</span></a>:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>A = boolean-condition
+</pre></div>
+</div>
+<p>can be used to change the state of points.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>data points can be activated and disactivated with mouse
+in the data-range mode (toolbar: <img alt="Data-Range Mode" class="icon" src="_images/mode_range_icon.png" />).</p>
+</div>
+</div>
+<div class="section" id="standard-deviation-or-weight">
+<span id="weights"></span><h2>Standard Deviation (or Weight)<a class="headerlink" href="#standard-deviation-or-weight" title="Permalink to this headline">¶</a></h2>
+<p>When fitting data, we assume that only the <em>y</em> coordinate is subject to
+statistical errors in measurement. This is a common assumption.
+To see how the <em>y</em>’s standard deviation, <em>σ</em>, influences fitting
+(optimization), look at the weighted sum of squared residuals formula
+in <a class="reference internal" href="fit.html#nonlinear"><span class="std std-ref">Nonlinear Optimization</span></a>.
+We can also think about weights of points – every point has a weight
+assigned, that is equal <img class="math" src="_images/math/6f0e876fb69aff8a12448322cba032028ae12a74.png" alt="w_i=1/\sigma_i^2" style="vertical-align: -5px"/>.</p>
+<p>Standard deviation of points can be
+<a class="reference internal" href="#dataload"><span class="std std-ref">read from file</span></a> together with the <em>x</em> and <em>y</em>
+coordinates. Otherwise, it is set either to max(<em>y</em><sup>1/2</sup>, 1)
+or to 1, depending on the <code class="xref std std-option docutils literal notranslate"><span class="pre">default_sigma</span></code> option.
+Setting std. dev. as a square root of the value is common
+and has theoretical ground when <em>y</em> is the number of independent events.
+You can always change the standard deviation, e.g. make it equal for every
+point with the command: <code class="docutils literal notranslate"><span class="pre">S=1</span></code>.
+See <a class="reference internal" href="#transform"><span class="std std-ref">Data Point Transformations</span></a> for details.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is often the case that user is not sure what standard deviation
+should be assumed, but it is her responsibility to pick something.</p>
+</div>
+</div>
+<div class="section" id="data-point-transformations">
+<span id="transform"></span><h2>Data Point Transformations<a class="headerlink" href="#data-point-transformations" title="Permalink to this headline">¶</a></h2>
+<p>Every data point has four properties: <em>x</em> coordinate, <em>y</em> coordinate,
+standard deviation of <em>y</em> and active/inactive flag.
+These properties can be changed using symbols <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">Y</span></code>, <code class="docutils literal notranslate"><span class="pre">S</span></code> and <code class="docutils literal notranslate"><span class="pre">A</span></code>,
+respectively. It is possible to either change a single point or apply
+a transformation to all points. For example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Y[3]=1.2</span></code> assigns the <em>y</em> coordinate of the 4th point (0 is first),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">-y</span></code> changes the sign of the <em>y</em> coordinate for all points.</p></li>
+</ul>
+<p>On the left side of the equality sign you can have one of symbols <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">Y</span></code>,
+<code class="docutils literal notranslate"><span class="pre">S</span></code>, <code class="docutils literal notranslate"><span class="pre">A</span></code>, possibly with the index in brackets. The symbols on the left
+side are case insensitive.</p>
+<p>The right hand side is a mathematical expression that can have special
+variables:</p>
+<ul class="simple">
+<li><p>lower case letters <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">s</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code> represent properties of data
+points before transformation,</p></li>
+<li><p>upper case <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">Y</span></code>, <code class="docutils literal notranslate"><span class="pre">S</span></code>, <code class="docutils literal notranslate"><span class="pre">A</span></code> stand for the same properties
+after transformation,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">M</span></code> stands for the number of points.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code> stands for the index of currently transformed point,
+e.g., <code class="docutils literal notranslate"><span class="pre">Y=y[M-n-1]</span></code> means that <em>n</em>-th point (<em>n</em>=0, 1, … M-1)
+is assigned <em>y</em> value of the <em>n</em>-th point from the end.</p></li>
+</ul>
+<p>Before the transformation a new array of points is created as a copy of the
+old array.
+Operations are applied sequentially from the first point to the last one,
+so while <code class="docutils literal notranslate"><span class="pre">Y[n+1]</span></code> and <code class="docutils literal notranslate"><span class="pre">y[n+1]</span></code> have always the same value,
+<code class="docutils literal notranslate"><span class="pre">Y[n-1]</span></code> and <code class="docutils literal notranslate"><span class="pre">y[n-1]</span></code> may differ. For example, the two commands:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>Y = y[n] + y[n-1]
+Y = y[n] + Y[n-1]
+</pre></div>
+</div>
+<p>differ. The first one adds to each point the value of the previous point.
+The second one adds the value of the previous point <em>after</em> transformation,
+so effectively it adds the sum of all previous points.
+The index <code class="docutils literal notranslate"><span class="pre">[n]</span></code> could be omitted (<code class="docutils literal notranslate"><span class="pre">Y</span> <span class="pre">=</span> <span class="pre">y</span> <span class="pre">+</span> <span class="pre">y[n-1]</span></code>).
+The value of undefined points, like <code class="docutils literal notranslate"><span class="pre">y[-1]</span></code> and <code class="docutils literal notranslate"><span class="pre">Y[-1]</span></code>,
+is explained later in this section.</p>
+<p>Expressions can contain:</p>
+<ul class="simple">
+<li><p>real numbers in normal or scientific format (e.g. <code class="docutils literal notranslate"><span class="pre">1.23e5</span></code>),</p></li>
+<li><p>constants <code class="docutils literal notranslate"><span class="pre">pi</span></code>, <code class="docutils literal notranslate"><span class="pre">true</span></code> (1), <code class="docutils literal notranslate"><span class="pre">false</span></code> (0)</p></li>
+<li><p>binary operators: <code class="docutils literal notranslate"><span class="pre">+</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">*</span></code>, <code class="docutils literal notranslate"><span class="pre">/</span></code>, <code class="docutils literal notranslate"><span class="pre">^</span></code>,</p></li>
+<li><p>boolean operators: <code class="docutils literal notranslate"><span class="pre">and</span></code>, <code class="docutils literal notranslate"><span class="pre">or</span></code>, <code class="docutils literal notranslate"><span class="pre">not</span></code>,</p></li>
+<li><p>comparisions: <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>.</p></li>
+<li><p>one argument functions:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">sqrt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">exp</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">log10</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ln</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sin</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cos</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tan</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sinh</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cosh</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tanh</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">atan</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">asin</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">acos</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">erf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">erfc</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gamma</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lgamma</span></code> (=ln(|<code class="docutils literal notranslate"><span class="pre">gamma()</span></code>|))</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">abs</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">round</span></code> (rounds to the nearest integer)</p></li>
+</ul>
+</li>
+<li><p>two argument functions:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">mod</span></code> (modulo)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min2</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max2</span></code> (<code class="docutils literal notranslate"><span class="pre">max2(3,5)</span></code> gives 5),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">randuniform(a,</span> <span class="pre">b)</span></code> (random number from interval (a, b)),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">randnormal(mu,</span> <span class="pre">sigma)</span></code> (random number from normal distribution),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">voigt(a,</span> <span class="pre">b)</span></code>
+= <img class="math" src="_images/math/495845a461c8c25c6259b801067109ceef36c7ce.png" alt="\frac{b}{\pi} \int_{-\infty}^{+\infty} \frac{\exp(-t^2)}{b^2+(a-t)^2} dt" style="vertical-align: -9px"/></p></li>
+</ul>
+</li>
+<li><p>ternary <code class="docutils literal notranslate"><span class="pre">?:</span></code> operator: <code class="docutils literal notranslate"><span class="pre">condition</span> <span class="pre">?</span>&#160; <span class="pre">expression1</span> <span class="pre">:</span> <span class="pre">expression2</span></code>,
+which returns <em>expression1</em> if condition is true and <em>expression2</em> otherwise.</p></li>
+</ul>
+<p>A few examples.</p>
+<ul>
+<li><p>The <em>x</em> scale of diffraction pattern can be changed from 2<em>θ</em> to <em>Q</em>:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>X = 4*pi * sin(x/2*pi/180) / 1.54051 <span class="c"># Cu 2θ -&gt; Q</span>
+</pre></div>
+</div>
+</li>
+<li><p>Negative <em>y</em> values can be zeroed:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>Y = max2(y, 0)
+</pre></div>
+</div>
+</li>
+<li><p>All standard deviations can be set to 1:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>S = 1
+</pre></div>
+</div>
+</li>
+<li><p>It is possible to select active range of data:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>A = x &gt; 40 and x &lt; 60 <span class="c"># select range (40, 60)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>All operations are performed on <strong>real numbers</strong>.
+Two numbers that differ less than <em>ε</em>
+(the value of <em>ε</em> is set by the <a class="reference internal" href="ref.html#epsilon"><span class="std std-ref">option epsilon</span></a>)
+are considered equal.</p>
+<p>Points can be created or deleted by changing the value of <code class="docutils literal notranslate"><span class="pre">M</span></code>.
+For example, the following commands:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>M=500; x=n/100; y=sin(x)
+</pre></div>
+</div>
+<p>create 500 points and generate a sinusoid.</p>
+<p>Points are kept sorted according to their <em>x</em> coordinate.
+The sorting is performed after each transformation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Changing the <em>x</em> coordinate may change the order
+and indices of points.</p>
+</div>
+<p>Indices, like all other values, are computed in the real number domain.
+If the index is not integer (it is compared using <em>ε</em> to the rounded value):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">s</span></code>, <code class="docutils literal notranslate"><span class="pre">a</span></code> are interpolated linearly.
+For example, <code class="docutils literal notranslate"><span class="pre">y[2.5]</span></code> is equal to <code class="docutils literal notranslate"><span class="pre">(y[2]+[3])/2</span></code>.
+If the index is less than 0 or larger than M-1, the value for the first
+or the last point, respectively, is returned.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">X</span></code>, <code class="docutils literal notranslate"><span class="pre">Y</span></code>, <code class="docutils literal notranslate"><span class="pre">S</span></code>, <code class="docutils literal notranslate"><span class="pre">A</span></code> the index is rounded to integer.
+If the index is less than 0 or larger than M-1, 0 is returned.</p></li>
+</ul>
+<p>Transformations separated by commas (<code class="docutils literal notranslate"><span class="pre">,</span></code>) form a sequance of transformations.
+During the sequance, the vectors <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">s</span></code> and <code class="docutils literal notranslate"><span class="pre">a</span></code> that contain
+old values are not changed. This makes possible to swap the axes:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>X=y, Y=x
+</pre></div>
+</div>
+<p>The special <code class="docutils literal notranslate"><span class="pre">index(arg)</span></code> function returns the index of point that has
+<em>x</em> equal <em>arg</em>, or, if there is no such point, the linear interpolation
+of two neighbouring indices. This enables equilibrating the step of data
+(with interpolation of <em>y</em> and <em>σ</em>):</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>X = x[0] + n * (x[M-1]-x[0]) / (M-1), Y = y[index(X)], S = s[index(X)]
+</pre></div>
+</div>
+<p>It is possible to delete points for which given condition is true,
+using expression <code class="docutils literal notranslate"><span class="pre">delete(condition)</span></code>:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>delete(not a) <span class="c"># delete inactive points</span>
+
+<span class="c"># reduce twice the number of points, averaging x and adding y</span>
+x = (x[n]+x[n+1])/2
+y = y[n]+y[n+1]
+delete(mod(n,2) == 1)
+</pre></div>
+</div>
+<p>If you have more than one dataset, you may need to specify to which
+dataset the transformation applies. See <a class="reference internal" href="#multidata"><span class="std std-ref">Working with Multiple Datasets</span></a> for details.</p>
+<p>The value of a data expression can be shown using the <code class="docutils literal notranslate"><span class="pre">print</span></code> command.
+The precision of printed numbers is governed by the
+<a class="reference internal" href="ref.html#numeric-format"><span class="std std-ref">numeric_format</span></a> option.</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>print M <span class="c"># the number of points</span>
+print y[index(20)] <span class="c"># value of y for x=20</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="aggregate-functions">
+<h2>Aggregate Functions<a class="headerlink" href="#aggregate-functions" title="Permalink to this headline">¶</a></h2>
+<p>Aggregate functions have syntax:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>aggregate(expression [if condition])
+</pre></div>
+</div>
+<p>and return a single value, calculated from values of all points
+for which the given condition is true. If the condition is omitted, all points
+in the dataset are taken into account.</p>
+<p>The following aggregate functions are recognized:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min()</span></code> — the smallest value,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max()</span></code> — the largest value,</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">argmin()</span></code> — (stands for the argument of the minimum)</dt><dd><p>the x value of the point for which the expression
+in brackets has the smallest value,</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">argmax()</span></code> — the x value of the point for which the expression</dt><dd><p>in brackets has the largest value,</p>
+</dd>
+</dl>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sum()</span></code> — the sum,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">count()</span></code> — the number of points for which the expression is true,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">avg()</span></code> — the arithmetic mean,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stddev()</span></code> — the standard deviation,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">centile(N,</span> <span class="pre">)</span></code> — percentile</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">darea()</span></code> — a function used to normalize the area (see the example below).
+It returns the sum of
+<em>expression</em>*(<em>x</em>[<em>n</em>+1]-<em>x</em>[<em>n</em>-1])/2.
+In particular, <code class="docutils literal notranslate"><span class="pre">darea(y)</span></code> returns the interpolated area under
+data points.</p></li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>p avg(y) <span class="c"># print the average y value</span>
+p centile(50, y) <span class="c"># print the median y value</span>
+p max(y) <span class="c"># the largest y value</span>
+p argmax(y) <span class="c"># the position of data maximum</span>
+p max(y if x &gt; 40 and x &lt; 60)   <span class="c"># the largest y value for x in (40, 60)</span>
+p max(y if a) <span class="c"># the largest y value in the active range</span>
+p min(x if y &gt; 0.1)] <span class="c"># x of the first point with y &gt; 0.1</span>
+p count(y&gt;100) <span class="c"># the number of points that have y above 100</span>
+p count(y&gt;avg(y)) <span class="c"># aggregate functions can be nested</span>
+p y[min(n if y &gt; 100)] <span class="c"># the first (from the left) value of y above 100</span>
+
+<span class="c"># take the first 2000 points, average them and subtract as background</span>
+Y = y - avg(y if n&lt;2000)
+
+Y = y / darea(y) <span class="c"># normalize data area</span>
+
+<span class="c"># make active only the points on the left from the first</span>
+<span class="c"># point with y &gt; 0.1</span>
+a = x &lt; min(x if y &gt; 0.1)]
+</pre></div>
+</div>
+</div>
+<div class="section" id="functions-and-variables-in-data-transformation">
+<span id="funcindt"></span><h2>Functions and Variables in Data Transformation<a class="headerlink" href="#functions-and-variables-in-data-transformation" title="Permalink to this headline">¶</a></h2>
+<p>You may postpone reading this section and read about the <a class="reference internal" href="model.html#model"><span class="std std-ref">Models</span></a> first.</p>
+<p>Variables ($foo) and functions (%bar) can be used in data expressions:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>Y = y / $foo  <span class="c"># divides all y&#39;s by $foo</span>
+Y = y - %f(x) <span class="c"># subtracts function %f from data</span>
+Y = y - @0.F(x) <span class="c"># subtracts all functions in F</span>
+
+<span class="c"># print the abscissa value of the maximum of the model</span>
+<span class="c"># (only the values in points are considered,</span>
+<span class="c">#  so it&#39;s not exactly the model&#39;s maximum)</span>
+print argmax(F(x))
+
+<span class="c"># print the maximum of the sum of two functions</span>
+print max(%_1(x) + %_2(x))
+
+<span class="c"># Fit constant x-correction (i.e. fit the instrumental zero error), ...</span>
+Z = Constant(~0)
+fit
+X = x + Z(x)        <span class="c"># ... correct the data</span>
+Z = 0               <span class="c"># ... and remove the correction from the model.</span>
+</pre></div>
+</div>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>in the <em>Baseline Mode</em> (<img alt="Baseline Mode" class="icon" src="_images/mode_bg_icon.png" />),
+functions <code class="docutils literal notranslate"><span class="pre">Spline</span></code> and <code class="docutils literal notranslate"><span class="pre">Polyline</span></code>
+are used to subtract manually selected background.
+Clicking <img alt="Strip Background" class="icon" src="_images/strip_bg_icon.png" /> results in a command like this:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>%bg0 = Spline(14.2979,62.1253, 39.5695,35.0676, 148.553,49.9493)
+Y = y - %bg0(x)
+</pre></div>
+</div>
+<p>Clicking the same button again undoes the subtraction:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>Y = y + %bg0(x)
+</pre></div>
+</div>
+<p>The function edited in the <em>Baseline Mode</em> is always named <code class="docutils literal notranslate"><span class="pre">%bgX</span></code>,
+where <em>X</em> is the index of the dataset.</p>
+</div>
+<p>Values of the function parameters (e.g. <code class="docutils literal notranslate"><span class="pre">%fun.a0</span></code>) and pseudo-parameters
+<code class="docutils literal notranslate"><span class="pre">Center</span></code>, <code class="docutils literal notranslate"><span class="pre">Height</span></code>, <code class="docutils literal notranslate"><span class="pre">FWHM</span></code>, <code class="docutils literal notranslate"><span class="pre">IB</span></code> and <code class="docutils literal notranslate"><span class="pre">Area</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">%fun.Area</span></code>)
+can also be used. IB stands for Integral Breadth – width of rectangle with
+the same area and height as the peak, in other words Area/Height.
+Not all functions have pseudo-parameters.</p>
+<p>It is also possible to calculate some properties of %functions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%f.numarea(x1,</span> <span class="pre">x2,</span> <span class="pre">n)</span></code> gives area integrated numerically
+from <em>x1</em> to <em>x2</em> using trapezoidal rule with <em>n</em> equal steps.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%f.findx(x1,</span> <span class="pre">x2,</span> <span class="pre">y)</span></code> finds <em>x</em> in interval (<em>x1</em>, <em>x2</em>) such that
+%f(<em>x</em>)=<em>y</em> using bisection method combined with Newton-Raphson method.
+It is a requirement that %f(<em>x1</em>) &lt; <em>y</em> &lt; %f(<em>x2</em>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%f.extremum(x1,</span> <span class="pre">x2)</span></code> finds <em>x</em> in interval (<em>x1</em>, <em>x2</em>)
+such that %f’(<em>x</em>)=0 using bisection method.
+It is a requirement that %f’(<em>x1</em>) and %f’(<em>x2</em>) have different signs.</p></li>
+</ul>
+<p>A few examples:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>print %fun.findx(-10, 10, 0)  <span class="c"># find the zero of %fun in [-10, 10]</span>
+print F.findx(-10, 10, 0)     <span class="c"># find the zero of the model in [-10, 10]</span>
+print %fun.numarea(0, 100, 10000) <span class="c"># shows area of function %fun</span>
+print %_1(%_1.extremum(40, 50)) <span class="c"># shows extremum value</span>
+
+<span class="c"># calculate FWHM numerically, value 50 can be tuned</span>
+$c = {%f.Center}
+p %f.findx($c, $c+50, %f.Height/2) - %f.findx($c, $c-50, %f.Height/2)
+p %f.FWHM <span class="c"># should give almost the same.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-with-multiple-datasets">
+<span id="multidata"></span><h2>Working with Multiple Datasets<a class="headerlink" href="#working-with-multiple-datasets" title="Permalink to this headline">¶</a></h2>
+<p>Let us call a set of data that usually comes from one file –
+a <em class="dfn">dataset</em>. It is possible to work simultaneously with multiple datasets.
+Datasets have numbers and are referenced by <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> with the number,
+(e.g. <code class="docutils literal notranslate"><span class="pre">&#64;3</span></code>).
+The user can specify which dataset the command should be applied to:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>@0: M=500    <span class="c"># change the number of points in the first dataset</span>
+@1 @2: M=500 <span class="c"># the same command applied to two datasets</span>
+@*: M=500    <span class="c"># and the same applied to all datasets</span>
+</pre></div>
+</div>
+<p>If the dataset is not specified, the command applies to the default dataset,
+which is initially &#64;0. The <code class="docutils literal notranslate"><span class="pre">use</span></code> command changes the default dataset:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>use @2 <span class="c"># set @2 as default</span>
+</pre></div>
+</div>
+<p>To load dataset from file, use one of the commands:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>@n &lt; filename:xcol:ycol:scol:block filetype options...
+
+@+ &lt; filename:xcol:ycol:scol:block filetype options...
+</pre></div>
+</div>
+<p>The first one uses existing data slot and the second one creates
+a new slot.  Using <code class="docutils literal notranslate"><span class="pre">&#64;+</span></code> increases the number of datasets,
+and the command <code class="docutils literal notranslate"><span class="pre">delete</span> <span class="pre">&#64;n</span></code> decreases it.</p>
+<p>The dataset can be duplicated (<code class="docutils literal notranslate"><span class="pre">&#64;+</span> <span class="pre">=</span> <span class="pre">&#64;n</span></code>) or transformed,
+more on this in <a class="reference internal" href="#datasettr"><span class="std std-ref">the next section</span></a>.</p>
+<p>Each dataset has a separate <a class="reference internal" href="model.html#model"><span class="std std-ref">model</span></a>,
+that can be fitted to the data. This is explained in the next chapter.</p>
+<p>Each dataset also has a title (it does not have to be unique, however).
+When loading file, a title is automatically created:</p>
+<ul class="simple">
+<li><p>if there is a name associated with the column <em>ycol</em>, the title
+is based on it;</p></li>
+<li><p>otherwise, if there is a name associated with the data block read from file,
+the title is set to this name;</p></li>
+<li><p>otherwise, the title is based on the filename</p></li>
+</ul>
+<p>Titles can be changed using the command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>@n: title = <span class="s1">&#39;new-title&#39;</span>
+</pre></div>
+</div>
+<p>To print the title of the dataset, type <code class="docutils literal notranslate"><span class="pre">&#64;n:</span> <span class="pre">info</span> <span class="pre">title</span></code>.</p>
+</div>
+<div class="section" id="dataset-transformations">
+<span id="datasettr"></span><h2>Dataset Transformations<a class="headerlink" href="#dataset-transformations" title="Permalink to this headline">¶</a></h2>
+<p>There are a few transformations defined for a whole dataset
+or for two datasets. The syntax is <code class="docutils literal notranslate"><span class="pre">&#64;n</span> <span class="pre">=</span> <span class="pre">...</span></code> or <code class="docutils literal notranslate"><span class="pre">&#64;+</span> <span class="pre">=</span> <span class="pre">...</span></code>.
+The the right hand side expression supports the following operations:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">-&#64;n</span></code></dt><dd><p>negation of all <em>y</em> values,</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">*</span> <span class="pre">&#64;n</span></code></dt><dd><p>(e.g. <code class="docutils literal notranslate"><span class="pre">0.4*&#64;0</span></code>) <em>y</em> values are multiplied by <em>d</em>,</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">&#64;n</span> <span class="pre">+</span> <span class="pre">&#64;m</span></code></dt><dd><p>returns <code class="docutils literal notranslate"><span class="pre">&#64;n</span></code> with added <em>y</em> values from interpolated <code class="docutils literal notranslate"><span class="pre">&#64;m</span></code>,</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">&#64;n</span> <span class="pre">-</span> <span class="pre">&#64;m</span></code></dt><dd><p>returns <code class="docutils literal notranslate"><span class="pre">&#64;n</span></code> with subtracted <em>y</em> values from interpolated <code class="docutils literal notranslate"><span class="pre">&#64;m</span></code>,</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">&#64;n</span> <span class="pre">and</span> <span class="pre">&#64;m</span></code></dt><dd><p>returns points from both datasets (re-sorted),</p>
+</dd>
+</dl>
+<p>and functions:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">sum_same_x(&#64;n)</span></code></dt><dd><p>Merges points which have distance in <em>x</em> is smaller than
+<a class="reference internal" href="ref.html#epsilon"><span class="std std-ref">epsilon</span></a>.
+<em>x</em> of the merged point is the average,
+and <em>y</em> and <em>σ</em> are sums of components.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">avg_same_x(&#64;n)</span></code></dt><dd><p>The same as <code class="docutils literal notranslate"><span class="pre">sum_same_x</span></code>, but <em>y</em> and <em>σ</em> are set as the average
+of components.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">shirley_bg(&#64;n)</span></code></dt><dd><p>Calculates Shirley background
+(useful in X-ray photoelectron spectroscopy).</p>
+</dd>
+</dl>
+<p>Examples:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>@+ = @0 <span class="c"># duplicate the dataset</span>
+@+ = @0 and @1 <span class="c"># create a new dataset from @0 and @1</span>
+@0 = @0 - shirley_bg(@0) <span class="c"># remove Shirley background</span>
+@0 = @0 - @1 <span class="c"># subtract @1 from @0</span>
+@0 = @0 - 0.28*@1 <span class="c"># subtract scaled dataset @1 from @0</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="exporting-data">
+<span id="dexport"></span><h2>Exporting Data<a class="headerlink" href="#exporting-data" title="Permalink to this headline">¶</a></h2>
+<p>Command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>print all: expression, ... &gt; file.tsv
+</pre></div>
+</div>
+<p>can export data to an ASCII TSV (tab separated values) file.</p>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p><span class="menuselection">Data ‣ Export</span></p>
+</div>
+<p>To export data in a 3-column (x, y and standard deviation) format, use:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>print all: x, y, s &gt; file.tsv
+</pre></div>
+</div>
+<p>Any expressions can be printed out:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>p all: n+1, x, y, F(x), y-F(x), %foo(x), sin(pi*x)+y^2 &gt; file.tsv
+</pre></div>
+</div>
+<p>It is possible to select which points are to be printed by replacing <code class="docutils literal notranslate"><span class="pre">all</span></code>
+with <code class="docutils literal notranslate"><span class="pre">if</span></code> followed by a condition:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>print if a: x, y <span class="c"># only active points are printed</span>
+print if x &gt; 30 and x &lt; 40: x, y <span class="c"># only points in (30,40)</span>
+</pre></div>
+</div>
+<p>The option <a class="reference internal" href="ref.html#numeric-format"><span class="std std-ref">numeric_format</span></a>
+controls the format and precision of all numbers.</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+ <a href="http://fityk.nieto.pl/">
+  <img class="logo" src="_static/fityk-logo.png" alt="Logo"/>
+ </a>
+<br/ >curve fitting,&nbsp; data analysis
+
+</p>
+
+<h3><a href="fityk-manual.html">Manual</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#loading-data">Loading Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#supported-filetypes">Supported Filetypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reading-text-files">Reading Text Files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#active-and-inactive-points">Active and Inactive Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#standard-deviation-or-weight">Standard Deviation (or Weight)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-point-transformations">Data Point Transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#aggregate-functions">Aggregate Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#functions-and-variables-in-data-transformation">Functions and Variables in Data Transformation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#working-with-multiple-datasets">Working with Multiple Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dataset-transformations">Dataset Transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#exporting-data">Exporting Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fit.html">Curve Fitting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="script.html">Scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ref.html">All the Rest</a></li>
+</ul>
+
+<ul>
+ <li class="toctree-l1">
+ <a class="reference external" href="https://github.com/wojdyr/fityk/wiki">Wiki</a>
+ </li>
+</ul>
+<div id="searchbox" role="search">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="12" />
+      <input type="submit" value="Search" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+   <div class="related" role="navigation" aria-label="related navigation">
+    Next: <a href="model.html">Models</a>
+   </div>
+
+  <div class="footer" role="contentinfo">
+    Updated on 2021-09-06 with Sphinx 3.5.3.
+        | <a href="https://github.com/wojdyr/fityk/blob/master/doc/data.rst"
+          rel="nofollow">Edit on GitHub</a>
+  </div>
+  </body>
+</html>

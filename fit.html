@@ -1,0 +1,405 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Curve Fitting &#8212; Fityk 1.3.1 manual</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/fitheme.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/fityk.ico"/>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Scripts" href="script.html" />
+    <link rel="prev" title="Models" href="model.html" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="curve-fitting">
+<span id="fit"></span><h1>Curve Fitting<a class="headerlink" href="#curve-fitting" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="nonlinear-optimization">
+<span id="nonlinear"></span><h2>Nonlinear Optimization<a class="headerlink" href="#nonlinear-optimization" title="Permalink to this headline">¶</a></h2>
+<p>This is the core. We have a set of observations (data points) to which
+we want to fit a <em>model</em> that depends on adjustable parameters.
+Let me quote <a class="reference external" href="http://www.nrbook.com/a/bookcpdf.php">Numerical Recipes</a>,
+chapter 15.0, page 656):</p>
+<blockquote>
+<div><p>The basic approach in all cases is usually the same: You choose or design
+a figure-of-merit function (merit function, for short) that measures the
+agreement between the data and the model with a particular choice of
+parameters. The merit function is conventionally arranged so that small
+values represent close agreement. The parameters of the model are then
+adjusted to achieve a minimum in the merit function, yielding best-fit
+parameters.  The adjustment process is thus a problem in minimization in
+many dimensions.  […] however, there exist special, more
+efficient, methods that are specific to modeling, and we will discuss
+these in this chapter. There are important issues that go beyond the mere
+finding of best-fit parameters. Data are generally not exact. They are
+subject to measurement errors (called noise in the context of
+signal-processing). Thus, typical data never exactly fit the model that
+is being used, even when that model is correct. We need the means to
+assess whether or not the model is appropriate, that is, we need to test
+the goodness-of-fit against some useful statistical standard. We usually
+also need to know the accuracy with which parameters are determined by
+the data set.  In other words, we need to know the likely errors of the
+best-fit parameters. Finally, it is not uncommon in fitting data to
+discover that the merit function is not unimodal, with a single minimum.
+In some cases, we may be interested in global rather than local
+questions. Not, “how good is this fit?” but rather, “how
+sure am I that there is not a very much better fit in some corner of
+parameter space?”</p>
+</div></blockquote>
+<p>Our function of merit is the weighted sum of squared residuals (WSSR),
+also called chi-square:</p>
+<div class="math">
+<p><img src="_images/math/1e3fd1bacff95ccd2109337dc8bbd691280bbce4.png" alt="\chi^{2}(\mathbf{a})
+  =\sum_{i=1}^{N} \left[\frac{y_i-y(x_i;\mathbf{a})}{\sigma_i}\right]^{2}
+  =\sum_{i=1}^{N} w_{i}\left[y_{i}-y(x_{i};\mathbf{a})\right]^{2}"/></p>
+</div><p>Weights are based on standard deviations, <img class="math" src="_images/math/6f0e876fb69aff8a12448322cba032028ae12a74.png" alt="w_i=1/\sigma_i^2" style="vertical-align: -5px"/>.
+You can learn why squares of residuals are minimized e.g. from
+chapter 15.1 of <em>Numerical Recipes</em>.</p>
+<p>The most popular method for curve-fitting is Levenberg-Marquardt.
+Fityk can also use a few general-purpose optimization methods.
+These methods are slower, some of them are orders of magnitude slower.
+Sometimes alternative methods find global minimum when the L-M algorithm
+is stuck in a local minimum, but in majority of cases the default L-M method
+is superior.</p>
+</div>
+<div class="section" id="uncertainty-of-parameters">
+<h2>Uncertainty of Parameters<a class="headerlink" href="#uncertainty-of-parameters" title="Permalink to this headline">¶</a></h2>
+<p>(It is easier for me to find a quote than to express it myself).</p>
+<p>From the book J. Wolberg, <em>Data Analysis Using the Method of Least Squares: Extracting the Most Information from Experiments</em>, Springer, 2006, p.50:</p>
+<blockquote>
+<div><p>(…) we turn to the task of determining the uncertainties associated
+with the <img class="math" src="_images/math/f512a7c2f1cb3536f838cf1115e9a3207ddcb57b.png" alt="a_k" style="vertical-align: -3px"/>’s. The usual measures of uncertainty are standard
+deviation (i.e., <em>σ</em>) or variance (i.e., <em>σ</em><sup>2</sup>) so
+we seek an expression that allows us to estimate the <img class="math" src="_images/math/8633ecb7ada490ea35d4929cbb79a9fccc755d29.png" alt="\sigma_{a_k}" style="vertical-align: -5px"/>’s.
+It can be shown (…) that the following expression gives us an unbiased
+estimate of <img class="math" src="_images/math/8633ecb7ada490ea35d4929cbb79a9fccc755d29.png" alt="\sigma_{a_k}" style="vertical-align: -5px"/>:</p>
+</div></blockquote>
+<div class="math">
+<p><img src="_images/math/123f3c6b620fa96a768fe24d37ccb4c990143564.png" alt="\sigma_{a_k}^{2}=\frac{S}{n-p}C_{kk}^{-1}"/></p>
+</div><p>Note that <img class="math" src="_images/math/8633ecb7ada490ea35d4929cbb79a9fccc755d29.png" alt="\sigma_{a_k}" style="vertical-align: -5px"/> is a square root of the value above.
+In this formula <em>n-p</em>, the number of (active) data points minus the number
+of independent parameters, is equal to the number of degrees of freedom.
+<em>S</em> is another symbol for <img class="math" src="_images/math/b127deb4078236c9bc522db6e3d21478dc6d2d6a.png" alt="\chi^2" style="vertical-align: -4px"/>.</p>
+<p>Terms of the <em>C</em> matrix are given as (p. 47 in the same book):</p>
+<div class="math">
+<p><img src="_images/math/8cf525c2fe763dd09f9e70c86d5587bc5c9a5cad.png" alt="C_{jk}=\sum_{i=1}^n w_i \frac{\partial f}{\partial a_j} \frac{\partial f}{\partial a_k}"/></p>
+</div><p><img class="math" src="_images/math/8633ecb7ada490ea35d4929cbb79a9fccc755d29.png" alt="\sigma_{a_k}" style="vertical-align: -5px"/> above is often called a <em>standard error</em>.
+Having standard errors, it is easy to calculate <em>confidence intervals</em>.
+But all these values should be used with care.
+Now another book will be cited: H. Motulsky and A. Christopoulos,
+<em>Fitting Models to Biological Data Using Linear and Nonlinear Regression:
+A Practical Guide to Curve Fitting</em>, Oxford University Press, 2004.
+This book can be <a class="reference external" href="http://www.graphpad.com/manuals/prism4/RegressionBook.pdf">downloaded for free</a> as a manual to GraphPad Prism 4.</p>
+<blockquote>
+<div><p>The standard errors reported by most nonlinear regression programs (…)
+are “approximate” or “asymptotic”. Accordingly, the confidence intervals
+computed using these errors should also be considered approximate.</p>
+<p>It would be a mistake to assume that the “95% confidence intervals” reported
+by nonlinear regression have exactly a 95% chance of enclosing the true
+parameter values. The chance that the true value of the parameter is within
+the reported confidence interval may not be exactly 95%. Even so, the
+asymptotic confidence intervals will give you a good sense of how precisely
+you have determined the value of the parameter.</p>
+<p>The calculations only work if nonlinear regression has converged on a
+sensible fit. If the regression converged on a false minimum, then the
+sum-of-squares as well as the parameter values will be wrong, so the
+reported standard error and confidence intervals won’t be helpful.</p>
+</div></blockquote>
+</div>
+<div class="section" id="bound-constraints">
+<span id="id2"></span><h2>Bound Constraints<a class="headerlink" href="#bound-constraints" title="Permalink to this headline">¶</a></h2>
+<p><em>Simple-variables</em> can have a <a class="reference internal" href="model.html#domain"><span class="std std-ref">domain</span></a>.
+Fitting method <code class="docutils literal notranslate"><span class="pre">mpfit</span></code> (Lev-Mar implementation) and the methods
+from the NLOpt library use domains to constrain the parameters
+– they never let the parameters go outside of the domain during fitting.</p>
+<p>In the literature, bound constraints are also called box constraints or,
+more generally, inequality constraints.
+Now a quotation discouraging the use of constraints. Peter Gans,
+<em>Data Fitting in the Chemical Sciences by the Method of Least Squares</em>,
+John Wiley &amp; Sons, 1992, chapter 5.2.2:</p>
+<blockquote>
+<div><p>Before looking at ways of dealing with inequality constraints we must ask a
+fundamental question: are they necessary? In the physical sciences and in
+least-squares minimizations in particular, inequality constraints are not
+always justified. The most common inequality constraint is that some number
+that relates to a physical quantity should be positive, <em>p</em><sub>j</sub> &gt; 0. If
+an unconstrained minimalization leads to a negative value, what are we to
+conclude? There are three possibilities; (a) the refinement has converged
+to a false minimum; (b) the model is wrong; (c) the parameter is not well
+defined by the data and is not significantly different from zero. In each
+of these three cases a remedy is at hand that does not involve constrained
+minimization: (a) start the refinement from good first estimates of the
+parameters; (b) change the model; (c) improve the quality of the data by
+further experimental work. If none of these remedies cure the problem of
+non-negativity constraints, then something is seriously wrong with the
+patient, and constrained minimization will probably not help.</p>
+</div></blockquote>
+<p>Setting the domain is described in the section <a class="reference internal" href="model.html#domain"><span class="std std-ref">Domains</span></a>.</p>
+<p>For a convenience, the <code class="xref std std-option docutils literal notranslate"><span class="pre">box_constraints</span></code> option can globally disable
+(and re-enable) the constraints.</p>
+</div>
+<div class="section" id="fitting-related-commands">
+<span id="fitting-cmd"></span><h2>Fitting Related Commands<a class="headerlink" href="#fitting-related-commands" title="Permalink to this headline">¶</a></h2>
+<p>To fit model to data, use command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>fit [max-eval] [@n ...]
+</pre></div>
+</div>
+<p>Specifying <em>max-eval</em> is equivalent to setting
+the <code class="xref std std-option docutils literal notranslate"><span class="pre">max_wssr_evaluations</span></code> option, for example
+<code class="docutils literal notranslate"><span class="pre">fit</span> <span class="pre">200</span></code> is a shorthand for <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">max_wssr_evaluations=200</span> <span class="pre">fit</span></code>.</p>
+<p>Like with all commands, the generic dataset specification (<code class="docutils literal notranslate"><span class="pre">&#64;n:</span> <span class="pre">fit</span></code>)
+can be used, but in special cases the datasets can be given at the end
+of the command. The difference is that
+<code class="docutils literal notranslate"><span class="pre">fit</span> <span class="pre">&#64;*</span></code> fits all datasets simultaneously, while
+<code class="docutils literal notranslate"><span class="pre">&#64;*:</span> <span class="pre">fit</span></code> fits all datasets one by one, separately.</p>
+<p>The fitting method can be set using the set command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>set fitting_method = method
+</pre></div>
+</div>
+<p>where method is one of: <code class="docutils literal notranslate"><span class="pre">levenberg_marquardt</span></code>, <code class="docutils literal notranslate"><span class="pre">mpfit</span></code>,
+<code class="docutils literal notranslate"><span class="pre">nelder_mead_simplex</span></code>, <code class="docutils literal notranslate"><span class="pre">genetic_algorithms</span></code>,
+<code class="docutils literal notranslate"><span class="pre">nlopt_nm</span></code>, <code class="docutils literal notranslate"><span class="pre">nlopt_lbfgs</span></code>, <code class="docutils literal notranslate"><span class="pre">nlopt_var2</span></code>, <code class="docutils literal notranslate"><span class="pre">nlopt_praxis</span></code>,
+<code class="docutils literal notranslate"><span class="pre">nlopt_bobyqa</span></code>, <code class="docutils literal notranslate"><span class="pre">nlopt_sbplx</span></code>.</p>
+<p>All non-linear fitting methods are iterative and evaluate the model many times,
+with different parameter sets, until one of the stopping criteria is met.
+There are three common criteria:</p>
+<ul class="simple">
+<li><p>the maximum number of evaluations of the objective function (WSSR),
+(option <code class="xref std std-option docutils literal notranslate"><span class="pre">max_wssr_evaluations</span></code>, 0=unlimited).
+Sometimes evaluations of WSSR and its derivatives is counted as 2.</p></li>
+<li><p>limit on processor time, in seconds
+(option <code class="xref std std-option docutils literal notranslate"><span class="pre">max_fitting_time</span></code>,  0=unlimited).</p></li>
+<li><p>(Unix only) receiving the <code class="docutils literal notranslate"><span class="pre">INT</span></code> signal
+which can be sent by pressing Ctrl-C in the terminal.</p></li>
+</ul>
+<p>and method-specific criteria, which generally stop
+when no further progress is expected.</p>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">fit_replot</span> <span class="pre">=</span> <span class="pre">1</span></code> updates the plot periodically during fitting,
+to visualize the progress.</p>
+<p><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">fit</span></code> shows measures of goodness-of-fit, including <img class="math" src="_images/math/b127deb4078236c9bc522db6e3d21478dc6d2d6a.png" alt="\chi^2" style="vertical-align: -4px"/>,
+reduced <img class="math" src="_images/math/b127deb4078236c9bc522db6e3d21478dc6d2d6a.png" alt="\chi^2" style="vertical-align: -4px"/> and R-squared:</p>
+<div class="math">
+<p><img src="_images/math/b4b459dda2219bc2c8d797541c101784e5d05150.png" alt="R^2 \equiv 1 - {{\sum_i (y_i - f_i)^2} \over {\sum_i (y_i-\bar{y})^2}}"/></p>
+</div><p>Parameter uncertainties and related values can be shown using:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">errors</span></code> – values of <img class="math" src="_images/math/8633ecb7ada490ea35d4929cbb79a9fccc755d29.png" alt="\sigma_{a_k}" style="vertical-align: -5px"/>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">confidence</span> <span class="pre">95</span></code> – confidence limits for confidence level 95%
+(any level can be choosen)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">cov</span></code> – the <em>C</em><sup>–1</sup> matrix.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">print</span> <span class="pre">$variable.error</span></code> – standard error of specified simple-variable,
+<code class="docutils literal notranslate"><span class="pre">print</span> <span class="pre">%func.height.error</span></code> also works.</p></li>
+</ul>
+<div class="admonition-in-the-gui admonition">
+<p class="admonition-title">In the GUI</p>
+<p>select <span class="menuselection">Fit ‣ Info</span> from the menu to see uncertainties,
+confidence intervals and and the covariance matrix.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In Fityk 0.9.0 and earlier <code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">errors</span></code> reported values of
+<img class="math" src="_images/math/2d3f57312f70ebdae544918fd35e5e58a09881c2.png" alt="\sqrt{C_{kk}^{-1}}" style="vertical-align: -11px"/>, which makes sense if the standard
+deviations of <em>y</em>’s are set accurately. This formula is derived
+in <em>Numerical Recipes</em>.</p>
+</div>
+<p>Finally, the user can <em>undo</em> and <em>redo</em> fitting:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fit</span> <span class="pre">undo</span></code> – restore previous parameter values,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fit</span> <span class="pre">redo</span></code> – move forward in the parameter history,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span> <span class="pre">fit_history</span></code> – show number of items in the fitting history,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fit</span> <span class="pre">history</span> <span class="pre">n</span></code> – load the <em>n</em>-th set of parameters from history</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fit</span> <span class="pre">clear_history</span></code> – clear the history</p></li>
+</ul>
+<p>Parameters are saved before and after fitting.
+Only changes to parameter values can be undone, other operations
+(like adding or removing variables) cannot.</p>
+</div>
+<div class="section" id="levenberg-marquardt">
+<span id="levmar"></span><h2>Levenberg-Marquardt<a class="headerlink" href="#levenberg-marquardt" title="Permalink to this headline">¶</a></h2>
+<p>This is a standard nonlinear least-squares routine, and involves
+computing the first derivatives of functions.  For a description
+of the algorithm see <em>Numerical Recipes</em>, chapter 15.5
+or Siegmund Brandt, <em>Data Analysis</em>, chapter 10.15.
+Essentially, it combines an inverse-Hessian method with a steepest
+descent method by introducing a <em>λ</em> factor. When <em>λ</em> is equal
+to 0, the method is equivalent to the inverse-Hessian method.
+When <em>λ</em> increases, the shift vector is rotated toward the direction
+of steepest descent and the length of the shift vector decreases. (The
+shift vector is a vector that is added to the parameter vector.) If a
+better fit is found on iteration, <em>λ</em> is decreased.</p>
+<p>Two implementation of this method are available: one from the <a class="reference external" href="http://www.physics.wisc.edu/~craigm/idl/cmpfit.html">MPFIT</a> library,
+based on the old good <a class="reference external" href="http://en.wikipedia.org/wiki/MINPACK">MINPACK</a> code (default method since ver. 1.3.0),
+and a custom implementation (default method in earlier fityk versions).</p>
+<p>To switch between the two implementation use command:</p>
+<div class="highlight-fityk notranslate"><div class="highlight"><pre><span></span>set fitting_method = mpfit               <span class="c"># switch to MPFIT</span>
+set fitting_method = levenberg_marquardt <span class="c"># switch to fityk implem. of L-M</span>
+</pre></div>
+</div>
+<p>The following stopping criteria are available for <em>mpfit</em>:</p>
+<ul class="simple">
+<li><p>the relative change of WSSR is smaller than the value of
+the <code class="xref std std-option docutils literal notranslate"><span class="pre">ftol_rel</span></code> option (default: 10^-10),</p></li>
+<li><p>the relative change of parameters is smaller than the value of
+the <code class="xref std std-option docutils literal notranslate"><span class="pre">xtol_rel</span></code> option (default: 10^-10),</p></li>
+</ul>
+<p>and for <em>levenberg_marquardt</em>:</p>
+<ul class="simple">
+<li><p>the relative change of WSSR is smaller than the value of
+the <code class="xref std std-option docutils literal notranslate"><span class="pre">lm_stop_rel_change</span></code> option twice in row,</p></li>
+<li><p><em>λ</em> is greater than the value of the <code class="xref std std-option docutils literal notranslate"><span class="pre">lm_max_lambda</span></code>
+option (default: 10^15), which normally means WSSR is not changing
+due to limited numerical precision.</p></li>
+</ul>
+</div>
+<div class="section" id="nelder-mead-downhill-simplex">
+<span id="nelder"></span><h2>Nelder-Mead Downhill Simplex<a class="headerlink" href="#nelder-mead-downhill-simplex" title="Permalink to this headline">¶</a></h2>
+<p>To quote chapter 4.8.3, p. 86 of Peter Gans,
+<em>Data Fitting in the Chemical Sciences by the Method of Least Squares</em>:</p>
+<blockquote>
+<div><p>A simplex is a geometrical entity that has n+1 vertices corresponding to
+variations in n parameters.  For two parameters the simplex is a
+triangle, for three parameters the simplex is a tetrahedron and so forth.
+The value of the objective function is calculated at each of the
+vertices. An iteration consists of the following process. Locate the
+vertex with the highest value of the objective function and replace this
+vertex by one lying on the line between it and the centroid of the other
+vertices. Four possible replacements can be considered, which I call
+contraction, short reflection, reflection and expansion.[…]
+It starts with an arbitrary simplex. Neither the shape nor position of
+this are critically important, except insofar as it may determine which
+one of a set of multiple minima will be reached. The simplex than expands
+and contracts as required in order to locate a valley if one exists. Then
+the size and shape of the simplex is adjusted so that progress may be
+made towards the minimum. Note particularly that if a pair of
+parameters are highly correlated, <em>both</em> will be
+simultaneously adjusted in about the correct proportion, as the shape of
+the simplex is adapted to the local contours.[…]
+Unfortunately it does not provide estimates of the parameter errors, etc.
+It is therefore to be recommended as a method for obtaining initial
+parameter estimates that can be used in the standard least squares
+method.</p>
+</div></blockquote>
+<p>This method is also described in previously mentioned
+<em>Numerical Recipes</em> (chapter 10.4) and <em>Data Analysis</em> (chapter 10.8).</p>
+<p>There are a few options for tuning this method. One of these is a
+stopping criterium <code class="xref std std-option docutils literal notranslate"><span class="pre">nm_convergence</span></code>. If the value of the
+expression 2(<em>M</em>−<em>m</em>)/(<em>M</em>+<em>m</em>), where <em>M</em> and <em>m</em> are the values
+of the worst and best vertices respectively (values of objective functions of
+vertices, to be precise!), is smaller then the value of
+<code class="xref std std-option docutils literal notranslate"><span class="pre">nm_convergence</span></code> option, fitting is stopped. In other words,
+fitting is stopped if all vertices are almost at the same level.</p>
+<p>The remaining options are related to initialization of the simplex.
+Before starting iterations, we have to choose a set of points in space
+of the parameters, called vertices.  Unless the option
+<code class="xref std std-option docutils literal notranslate"><span class="pre">nm_move_all</span></code> is set, one of these points will be the current
+point – values that parameters have at this moment. All but this one
+are drawn as follows: each parameter of each vertex is drawn separately.
+It is drawn from a distribution that has its center in the center of the
+<a class="reference internal" href="model.html#domain"><span class="std std-ref">domain</span></a> of the parameter, and a width proportional to
+both width of the domain and value of the <code class="xref std std-option docutils literal notranslate"><span class="pre">nm_move_factor</span></code>
+parameter.  Distribution shape can be set using the option
+<code class="xref std std-option docutils literal notranslate"><span class="pre">nm_distribution</span></code> as one of: <code class="docutils literal notranslate"><span class="pre">uniform</span></code>, <code class="docutils literal notranslate"><span class="pre">gaussian</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lorentzian</span></code> and <code class="docutils literal notranslate"><span class="pre">bound</span></code>. The last one causes the value of the
+parameter to be either the greatest or smallest value in the domain of
+the parameter – one of the two bounds of the domain (assuming that
+<code class="xref std std-option docutils literal notranslate"><span class="pre">nm_move_factor</span></code> is equal 1).</p>
+</div>
+<div class="section" id="nlopt">
+<h2>NLopt<a class="headerlink" href="#nlopt" title="Permalink to this headline">¶</a></h2>
+<p>A few methods from the <a class="reference external" href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLopt</a> library are available:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">nlopt_nm</span></code> – Nelder-Mead method, similar to the one described above,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nlopt_lbfgs</span></code> – low-storage BFGS,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nlopt_var2</span></code> – shifted limited-memory variable-metric,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nlopt_praxis</span></code> – PRAXIS (PRincipal AXIS),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nlopt_bobyqa</span></code> – BOBYQA,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nlopt_sbplx</span></code> – Sbplx (based on Subplex),</p></li>
+</ul>
+<p>All NLopt methods have the same stopping criteria (in addition to the
+common criteria):</p>
+<ul class="simple">
+<li><p>an optimization step changes the WSSR value by less than the value of
+the <code class="xref std std-option docutils literal notranslate"><span class="pre">ftol_rel</span></code> option (default: 10^-10) multiplied by the WSSR,</p></li>
+<li><p>an optimization step changes every parameter by less than the value of
+the <code class="xref std std-option docutils literal notranslate"><span class="pre">xtol_rel</span></code> option (default: 10^-10)
+multiplied by the absolute value of the parameter.</p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+ <a href="http://fityk.nieto.pl/">
+  <img class="logo" src="_static/fityk-logo.png" alt="Logo"/>
+ </a>
+<br/ >curve fitting,&nbsp; data analysis
+
+</p>
+
+<h3><a href="fityk-manual.html">Manual</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Models</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Curve Fitting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#nonlinear-optimization">Nonlinear Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#uncertainty-of-parameters">Uncertainty of Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bound-constraints">Bound Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fitting-related-commands">Fitting Related Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#levenberg-marquardt">Levenberg-Marquardt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nelder-mead-downhill-simplex">Nelder-Mead Downhill Simplex</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nlopt">NLopt</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="script.html">Scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ref.html">All the Rest</a></li>
+</ul>
+
+<ul>
+ <li class="toctree-l1">
+ <a class="reference external" href="https://github.com/wojdyr/fityk/wiki">Wiki</a>
+ </li>
+</ul>
+<div id="searchbox" role="search">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="12" />
+      <input type="submit" value="Search" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+   <div class="related" role="navigation" aria-label="related navigation">
+    Next: <a href="script.html">Scripts</a>
+   </div>
+
+  <div class="footer" role="contentinfo">
+    Updated on 2021-09-06 with Sphinx 3.5.3.
+        | <a href="https://github.com/wojdyr/fityk/blob/master/doc/fit.rst"
+          rel="nofollow">Edit on GitHub</a>
+  </div>
+  </body>
+</html>

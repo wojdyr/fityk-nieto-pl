@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Introduction &#8212; Fityk 1.3.1 manual</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/fitheme.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/fityk.ico"/>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started" href="getstarted.html" />
+    <link rel="prev" title="Fityk 1.3.1 - User’s Manual" href="fityk-manual.html" />
+   
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<span id="intro"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>Fityk is a program for nonlinear fitting of analytical functions
+(especially peak-shaped) to data (usually experimental data).</p>
+<p>To put it differently, it is primarily peak fitting software,
+but can handle other types of functions as well.</p>
+<p>Apart from the actual fitting, the program helps with data processing
+and provides ergonomic graphical interface (and also command line interface
+and scripting API – but if the program is popular in some fields,
+it’s thanks to its graphical interface).</p>
+<p>It is <a class="reference external" href="https://scholar.google.com/citations?view_op=view_citation&amp;citation_for_view=aCtDUBMAAAAJ:u5HHmVD_uO8C">reportedly</a> used in crystallography, chromatography,
+photoluminescence and photoelectron spectroscopy, infrared and Raman
+spectroscopy, to name but a few.</p>
+<p>Fityk offers various nonlinear fitting methods, simple background
+subtraction and other manipulations to the dataset, easy placement of
+peaks and changing of peak parameters, support for analysis of series of
+datasets, automation of common tasks with scripts, and much more.</p>
+<p>In simple cases, the program can be operated with mouse only.
+Let say that you want to model the data with multiple peaks or other
+function shapes. You select a built-in function type
+(such as Gaussian, Voigt, sigmoid, polynomial and dozens of others)
+place it with the mouse, place other functions
+and click a button to fit it.</p>
+<p>But the program can also handle quite complex scenarios.
+You can define your own function types.
+You can specify sophisticated dependencies between parameters of the functions
+(say, peak widths given as a function of peak positions).
+You can fit multiple datasets together using common set of parameters.
+You can model zero-shift in your instrument or do more complicated
+refinement of the X scale.  And you can automate all this work.
+If you don’t know how to handle your case, do not hesistate
+to ask on the <a class="reference external" href="http://groups.google.com/group/fityk-users/">users group</a> or contact the author.</p>
+<p>To download the latest version of the program or to contact the author
+visit <a class="reference external" href="http://fityk.nieto.pl/">fityk.nieto.pl</a>.</p>
+<p>Reference for academic papers:
+M. Wojdyr,
+<a class="reference external" href="http://dx.doi.org/10.1107/S0021889810030499">J. Appl. Cryst. 43, 1126-1128</a>
+(2010)
+[<a class="reference external" href="http://wojdyr.github.io/fityk-JAC-10-reprint.pdf">reprint</a>]</p>
+<div class="section" id="open-source">
+<h2>Open Source<a class="headerlink" href="#open-source" title="Permalink to this headline">¶</a></h2>
+<p>Fityk is open-source (<a class="reference external" href="http://creativecommons.org/licenses/GPL/2.0/">GPL2+</a>).
+If you are interested, please find <a class="reference external" href="https://github.com/wojdyr/fityk/">the source code at GitHub</a>.</p>
+<p>It uses a few open source projects:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLopt</a> for several optional fitting methods</p></li>
+<li><p>one of the fitting methods uses <a class="reference external" href="http://www.physics.wisc.edu/~craigm/idl/cmpfit.html">MPFIT</a> library (MINPACK-1 Least Squares
+Fitting Library in C), which includes software developed by
+the University of Chicago, as Operator of Argonne National Laboratory.</p></li>
+<li><p><a class="reference external" href="http://xylib.sourceforge.net/">xylib</a> library handles reading data files</p></li>
+<li><p><a class="reference external" href="http://www.lua.org/">Lua</a> interpreter is embedded for scripting</p></li>
+<li><p>and a few popular libraries and tools that make programming much easier:
+wxWidgets (GUI), Boost (misc), zlib (compression), readline (CLI),
+SWIG (bindings), Catch (testing).</p></li>
+</ul>
+</div>
+<div class="section" id="about-this-manual">
+<h2>About this manual<a class="headerlink" href="#about-this-manual" title="Permalink to this headline">¶</a></h2>
+<p>This manual is written in ReStructuredText.
+All corrections and improvements are welcome.
+Use the <code class="docutils literal notranslate"><span class="pre">Show</span> <span class="pre">Source</span></code> link to get the source of the page, edit it
+and send me either the modified version or a patch.</p>
+<p>Alternatively, go to
+<a class="reference external" href="https://github.com/wojdyr/fityk/tree/master/doc">GitHub</a>,
+open corresponding rst file,
+press <em>Fork and edit this file</em> button, do edits in your web browser
+and click <em>Propose file change</em>.</p>
+<p>The following people have contributed to this manual (in chronological order):
+Marcin Wojdyr (maintainer), Stan Gierlotka, Jaap Folmer, Michael Richardson.</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+ <a href="http://fityk.nieto.pl/">
+  <img class="logo" src="_static/fityk-logo.png" alt="Logo"/>
+ </a>
+<br/ >curve fitting,&nbsp; data analysis
+
+</p>
+
+<h3><a href="fityk-manual.html">Manual</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#open-source">Open Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#about-this-manual">About this manual</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fit.html">Curve Fitting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="script.html">Scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ref.html">All the Rest</a></li>
+</ul>
+
+<ul>
+ <li class="toctree-l1">
+ <a class="reference external" href="https://github.com/wojdyr/fityk/wiki">Wiki</a>
+ </li>
+</ul>
+<div id="searchbox" role="search">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="12" />
+      <input type="submit" value="Search" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+   <div class="related" role="navigation" aria-label="related navigation">
+    Next: <a href="getstarted.html">Getting Started</a>
+   </div>
+
+  <div class="footer" role="contentinfo">
+    Updated on 2021-09-06 with Sphinx 3.5.3.
+        | <a href="https://github.com/wojdyr/fityk/blob/master/doc/intro.rst"
+          rel="nofollow">Edit on GitHub</a>
+  </div>
+  </body>
+</html>
